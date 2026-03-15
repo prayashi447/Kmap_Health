@@ -30,6 +30,9 @@ class Dataset(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
     processed = db.Column(db.Boolean, default=False)
+    # New columns for external sources
+    source_type = db.Column(db.String(50), default='upload')  # 'upload', 'wikipedia', 'arxiv'
+    source_url = db.Column(db.String(500), nullable=True)  # Original source URL
     
     # Relationships
     entities = db.relationship('Entity', backref='dataset', lazy=True, cascade='all, delete-orphan')
@@ -42,7 +45,9 @@ class Dataset(db.Model):
         return {
             'entity_count': len(self.entities),
             'relation_count': len(self.relations),
-            'entity_types': self.get_entity_types()
+            'entity_types': self.get_entity_types(),
+            'source_type': self.source_type,
+            'source_url': self.source_url
         }
     
     def get_entity_types(self):

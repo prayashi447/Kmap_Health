@@ -111,6 +111,70 @@
     </div>
 </div>
 
+<!-- External Data Sources Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Import from External Sources</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3 mb-md-0">
+                        <div class="card h-100 border-primary">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-3">
+                                    <i class="bi bi-wikipedia fs-1 text-primary me-3"></i>
+                                    <h5 class="card-title mb-0">Wikipedia</h5>
+                                </div>
+                                <p class="card-text text-muted small">Search and import articles from Wikipedia to extract entities and relationships.</p>
+                                <form action="{{ url_for('import_wikipedia') }}" method="POST" class="mt-3">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" name="search_query" placeholder="Enter Wikipedia article title..." required>
+                                        <select class="form-select" name="domain" style="max-width: 120px;">
+                                            <option value="general">General</option>
+                                            <option value="science">Science</option>
+                                            <option value="history">History</option>
+                                            <option value="technology">Technology</option>
+                                        </select>
+                                        <button class="btn btn-primary" type="submit">
+                                            <i class="bi bi-search"></i> Import
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card h-100 border-success">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-3">
+                                    <i class="bi bi-journal-text fs-1 text-success me-3"></i>
+                                    <h5 class="card-title mb-0">arXiv</h5>
+                                </div>
+                                <p class="card-text text-muted small">Search and import academic papers from arXiv for research-focused knowledge graphs.</p>
+                                <form action="{{ url_for('import_arxiv') }}" method="POST" class="mt-3">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" name="search_query" placeholder="Search arXiv papers..." required>
+                                        <select class="form-select" name="max_results" style="max-width: 100px;">
+                                            <option value="5">5 papers</option>
+                                            <option value="10" selected>10 papers</option>
+                                            <option value="20">20 papers</option>
+                                        </select>
+                                        <button class="btn btn-success" type="submit">
+                                            <i class="bi bi-search"></i> Search
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Domain Distribution Chart -->
 <div class="row mb-4">
     <div class="col-md-6">

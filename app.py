@@ -12,6 +12,12 @@ import numpy as np
 from pyvis.network import Network
 import secrets
 from difflib import SequenceMatcher
+import requests
+import xml.etree.ElementTree as ET
+import wikipedia
+import arxiv
+import re
+from time import sleep
 
 # NLP imports
 from nlp.preprocessing import preprocess_text
@@ -74,6 +80,8 @@ class Dataset(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
     processed = db.Column(db.Boolean, default=False)
+    source_type = db.Column(db.String(50), default='upload')  # 'upload', 'wikipedia', 'arxiv'
+    source_url = db.Column(db.String(500), nullable=True)  # Original source URL
     
     # Relationships
     entities = db.relationship('Entity', backref='dataset', lazy=True, cascade='all, delete-orphan')
@@ -188,12 +196,18 @@ def dashboard():
         Relation.relation_type.in_(['same_as', 'related_to', 'works_for', 'employs', 'lives_in', 'located_in'])
     ).count()
     
+    # Count external source datasets
+    wikipedia_datasets = sum(1 for d in datasets if d.source_type == 'wikipedia')
+    arxiv_datasets = sum(1 for d in datasets if d.source_type == 'arxiv')
+    
     stats = {
         'total_datasets': len(datasets),
         'total_entities': Entity.query.join(Dataset).filter(Dataset.user_id == current_user.id).count(),
         'total_relations': Relation.query.join(Dataset).filter(Dataset.user_id == current_user.id).count(),
         'cross_domain_datasets': cross_domain_datasets,
-        'cross_domain_relations': cross_domain_relations
+        'cross_domain_relations': cross_domain_relations,
+        'wikipedia_datasets': wikipedia_datasets,
+        'arxiv_datasets': arxiv_datasets
     }
     
     return render_template('dashboard.html', datasets=datasets, stats=stats)
@@ -223,7 +237,8 @@ def upload():
                 name=file.filename,
                 domain=domain,
                 filename=filename,
-                user_id=current_user.id
+                user_id=current_user.id,
+                source_type='upload'
             )
             db.session.add(dataset)
             db.session.commit()
@@ -237,7 +252,295 @@ def upload():
     return render_template('upload.html')
 
 # ============================================
-# 5. MULTI-FILE UPLOAD ROUTE (NOW app IS DEFINED)
+# 5. WIKIPEDIA AND ARXIV ROUTES
+# ============================================
+
+@app.route('/import/wikipedia', methods=['POST'])
+@login_required
+def import_wikipedia():
+    """Import a single Wikipedia article"""
+    search_query = request.form.get('search_query')
+    domain = request.form.get('domain', 'general')
+    
+    if not search_query:
+        flash('Please enter a search query')
+        return redirect(url_for('dashboard'))
+    
+    try:
+        # Search for the article
+        search_results = wikipedia.search(search_query, results=3)
+        
+        if not search_results:
+            flash(f'No Wikipedia articles found for "{search_query}"')
+            return redirect(url_for('dashboard'))
+        
+        # Get the first result
+        article_title = search_results[0]
+        
+        # Get the page content
+        page = wikipedia.page(article_title, auto_suggest=False)
+        content = page.content
+        
+        # Create a filename
+        safe_title = re.sub(r'[^\w\s-]', '', article_title).strip().replace(' ', '_')
+        filename = secure_filename(f"{current_user.id}_{datetime.now().timestamp()}_{safe_title}.txt")
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        
+        # Save content to file
+        with open(filepath, 'w', encoding='utf-8') as f:
+            f.write(f"Title: {article_title}\n\n")
+            f.write(f"URL: {page.url}\n\n")
+            f.write(content)
+        
+        # Create dataset record
+        dataset = Dataset(
+            name=f"Wikipedia: {article_title}",
+            domain=domain,
+            filename=filename,
+            user_id=current_user.id,
+            source_type='wikipedia',
+            source_url=page.url
+        )
+        db.session.add(dataset)
+        db.session.commit()
+        
+        # Process the dataset
+        process_dataset(dataset.id, filepath)
+        
+        flash(f'Successfully imported Wikipedia article: {article_title}')
+        
+    except wikipedia.exceptions.DisambiguationError as e:
+        # Handle disambiguation pages
+        options = e.options[:5]
+        flash(f'Disambiguation error. Did you mean one of: {", ".join(options)}?')
+    except wikipedia.exceptions.PageError:
+        flash(f'Wikipedia page not found for "{search_query}"')
+    except Exception as e:
+        flash(f'Error importing Wikipedia article: {str(e)}')
+    
+    return redirect(url_for('dashboard'))
+
+@app.route('/import/wikipedia/advanced', methods=['POST'])
+@login_required
+def import_wikipedia_advanced():
+    """Advanced Wikipedia import with multiple articles"""
+    query = request.form.get('query')
+    domain = request.form.get('domain', 'general')
+    limit = int(request.form.get('limit', 3))
+    
+    if not query:
+        flash('Please enter a search query')
+        return redirect(url_for('dashboard'))
+    
+    try:
+        # Search for articles
+        search_results = wikipedia.search(query, results=limit)
+        
+        if not search_results:
+            flash(f'No Wikipedia articles found for "{query}"')
+            return redirect(url_for('dashboard'))
+        
+        imported_count = 0
+        
+        for article_title in search_results:
+            try:
+                # Get the page content
+                page = wikipedia.page(article_title, auto_suggest=False)
+                content = page.content
+                
+                # Create a filename
+                safe_title = re.sub(r'[^\w\s-]', '', article_title).strip().replace(' ', '_')
+                filename = secure_filename(f"{current_user.id}_{datetime.now().timestamp()}_{safe_title}.txt")
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                
+                # Save content to file
+                with open(filepath, 'w', encoding='utf-8') as f:
+                    f.write(f"Title: {article_title}\n\n")
+                    f.write(f"URL: {page.url}\n\n")
+                    f.write(content)
+                
+                # Create dataset record
+                dataset = Dataset(
+                    name=f"Wikipedia: {article_title}",
+                    domain=domain,
+                    filename=filename,
+                    user_id=current_user.id,
+                    source_type='wikipedia',
+                    source_url=page.url
+                )
+                db.session.add(dataset)
+                db.session.commit()
+                
+                # Process the dataset
+                process_dataset(dataset.id, filepath)
+                
+                imported_count += 1
+                
+                # Small delay to be respectful to Wikipedia
+                sleep(0.5)
+                
+            except Exception as e:
+                print(f"Error importing {article_title}: {e}")
+                continue
+        
+        flash(f'Successfully imported {imported_count} Wikipedia articles')
+        
+    except Exception as e:
+        flash(f'Error in advanced Wikipedia import: {str(e)}')
+    
+    return redirect(url_for('dashboard'))
+
+@app.route('/import/arxiv', methods=['POST'])
+@login_required
+def import_arxiv():
+    """Import papers from arXiv"""
+    search_query = request.form.get('search_query')
+    max_results = int(request.form.get('max_results', 10))
+    
+    if not search_query:
+        flash('Please enter a search query')
+        return redirect(url_for('dashboard'))
+    
+    try:
+        # Search arXiv
+        search = arxiv.Search(
+            query=search_query,
+            max_results=max_results,
+            sort_by=arxiv.SortCriterion.Relevance
+        )
+        
+        imported_count = 0
+        
+        for result in search.results():
+            # Create content from paper metadata and summary
+            content = f"Title: {result.title}\n\n"
+            content += f"Authors: {', '.join(author.name for author in result.authors)}\n\n"
+            content += f"Published: {result.published}\n\n"
+            content += f"Updated: {result.updated}\n\n"
+            content += f"Categories: {', '.join(result.categories)}\n\n"
+            content += f"DOI: {result.doi}\n\n" if result.doi else ""
+            content += f"Journal Reference: {result.journal_ref}\n\n" if result.journal_ref else ""
+            content += "Abstract:\n"
+            content += result.summary
+            
+            # Create a filename
+            safe_title = re.sub(r'[^\w\s-]', '', result.title)[:100].strip().replace(' ', '_')
+            filename = secure_filename(f"{current_user.id}_{datetime.now().timestamp()}_arxiv_{safe_title}.txt")
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            
+            # Save content to file
+            with open(filepath, 'w', encoding='utf-8') as f:
+                f.write(content)
+            
+            # Create dataset record
+            dataset = Dataset(
+                name=f"arXiv: {result.title[:100]}",
+                domain='academic',
+                filename=filename,
+                user_id=current_user.id,
+                source_type='arxiv',
+                source_url=result.entry_id
+            )
+            db.session.add(dataset)
+            db.session.commit()
+            
+            # Process the dataset
+            process_dataset(dataset.id, filepath)
+            
+            imported_count += 1
+        
+        flash(f'Successfully imported {imported_count} arXiv papers')
+        
+    except Exception as e:
+        flash(f'Error importing arXiv papers: {str(e)}')
+    
+    return redirect(url_for('dashboard'))
+
+@app.route('/import/arxiv/advanced', methods=['POST'])
+@login_required
+def import_arxiv_advanced():
+    """Advanced arXiv import with more options"""
+    query = request.form.get('query')
+    category = request.form.get('category', 'all')
+    max_results = int(request.form.get('max_results', 10))
+    sort_by = request.form.get('sort_by', 'relevance')
+    
+    if not query:
+        flash('Please enter a search query')
+        return redirect(url_for('dashboard'))
+    
+    try:
+        # Build search query with category if specified
+        if category and category != 'all':
+            search_query = f"cat:{category} AND ({query})"
+        else:
+            search_query = query
+        
+        # Map sort option
+        sort_map = {
+            'relevance': arxiv.SortCriterion.Relevance,
+            'submittedDate': arxiv.SortCriterion.SubmittedDate,
+            'lastUpdatedDate': arxiv.SortCriterion.LastUpdatedDate
+        }
+        
+        # Search arXiv
+        search = arxiv.Search(
+            query=search_query,
+            max_results=max_results,
+            sort_by=sort_map.get(sort_by, arxiv.SortCriterion.Relevance)
+        )
+        
+        imported_count = 0
+        
+        for result in search.results():
+            # Create content from paper
+            content = f"Title: {result.title}\n\n"
+            content += f"Authors: {', '.join(author.name for author in result.authors)}\n\n"
+            content += f"Published: {result.published}\n\n"
+            content += f"Updated: {result.updated}\n\n"
+            content += f"Categories: {', '.join(result.categories)}\n\n"
+            content += f"Primary Category: {result.primary_category}\n\n"
+            content += f"DOI: {result.doi}\n\n" if result.doi else ""
+            content += f"Journal Reference: {result.journal_ref}\n\n" if result.journal_ref else ""
+            content += f"Comment: {result.comment}\n\n" if result.comment else ""
+            content += "Abstract:\n"
+            content += result.summary
+            
+            # Create filename
+            safe_title = re.sub(r'[^\w\s-]', '', result.title)[:100].strip().replace(' ', '_')
+            filename = secure_filename(f"{current_user.id}_{datetime.now().timestamp()}_arxiv_{safe_title}.txt")
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            
+            # Save content
+            with open(filepath, 'w', encoding='utf-8') as f:
+                f.write(content)
+            
+            # Create dataset record
+            dataset = Dataset(
+                name=f"arXiv: {result.title[:100]}",
+                domain='academic',
+                filename=filename,
+                user_id=current_user.id,
+                source_type='arxiv',
+                source_url=result.entry_id
+            )
+            db.session.add(dataset)
+            db.session.commit()
+            
+            # Process the dataset
+            process_dataset(dataset.id, filepath)
+            
+            imported_count += 1
+        
+        flash(f'Successfully imported {imported_count} arXiv papers')
+        
+    except Exception as e:
+        flash(f'Error in advanced arXiv import: {str(e)}')
+    
+    return redirect(url_for('dashboard'))
+
+# ============================================
+# 6. MULTI-FILE UPLOAD ROUTE
 # ============================================
 @app.route('/upload_multi', methods=['GET', 'POST'])
 @login_required
@@ -279,7 +582,8 @@ def upload_multi():
                     name=file.filename,
                     domain=domains[i],
                     filename=filename,
-                    user_id=current_user.id
+                    user_id=current_user.id,
+                    source_type='upload'
                 )
                 db.session.add(dataset)
                 db.session.flush()
@@ -301,7 +605,7 @@ def upload_multi():
     return render_template('upload_multi.html')
 
 # ============================================
-# 6. OTHER ROUTES (graph, search, admin, etc.)
+# 7. OTHER ROUTES (graph, search, admin, etc.)
 # ============================================
 
 @app.route('/graph/<int:dataset_id>')
@@ -379,12 +683,20 @@ def admin():
     entities = Entity.query.all()
     relations = Relation.query.all()
     
+    # Count by source type
+    source_stats = {
+        'upload': Dataset.query.filter_by(source_type='upload').count(),
+        'wikipedia': Dataset.query.filter_by(source_type='wikipedia').count(),
+        'arxiv': Dataset.query.filter_by(source_type='arxiv').count()
+    }
+    
     stats = {
         'total_users': len(users),
         'total_datasets': len(datasets),
         'total_entities': len(entities),
         'total_relations': len(relations),
-        'pending_relations': Relation.query.filter_by(approved=False).count()
+        'pending_relations': Relation.query.filter_by(approved=False).count(),
+        'source_stats': source_stats
     }
     
     return render_template('admin.html', users=users, datasets=datasets, 
@@ -409,7 +721,9 @@ def dataset_stats(dataset_id):
     
     return jsonify({
         'entity_types': entity_types,
-        'relation_types': relation_types
+        'relation_types': relation_types,
+        'source_type': dataset.source_type,
+        'source_url': dataset.source_url
     })
 
 @app.route('/api/dataset/<int:dataset_id>', methods=['DELETE'])
@@ -473,7 +787,7 @@ def approve_relation(relation_id):
     return jsonify({'success': True})
 
 # ============================================
-# 7. PROCESSING FUNCTIONS
+# 8. PROCESSING FUNCTIONS
 # ============================================
 
 def process_dataset(dataset_id, filepath):
@@ -763,7 +1077,7 @@ def reverse_relation(relation):
     return reversals.get(relation, 'related_to')
 
 # ============================================
-# 8. RUN THE APPLICATION
+# 9. RUN THE APPLICATION
 # ============================================
 if __name__ == '__main__':
     with app.app_context():

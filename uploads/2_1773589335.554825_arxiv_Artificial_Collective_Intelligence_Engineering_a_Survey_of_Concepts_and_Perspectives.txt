@@ -1,0 +1,16 @@
+Title: Artificial Collective Intelligence Engineering: a Survey of Concepts and Perspectives
+
+Authors: Roberto Casadei
+
+Published: 2023-04-11 11:22:47+00:00
+
+Updated: 2023-04-11 11:22:47+00:00
+
+Categories: cs.AI, cs.DC, cs.MA, eess.SY
+
+DOI: 10.1162/artl_a_00408
+
+Journal Reference: Artificial Life, July 2023, Pages 1-35, Online ISSN: 1530-9185, Print ISSN: 1064-5462
+
+Abstract:
+Collectiveness is an important property of many systems--both natural and artificial. By exploiting a large number of individuals, it is often possible to produce effects that go far beyond the capabilities of the smartest individuals, or even to produce intelligent collective behaviour out of not-so-intelligent individuals. Indeed, collective intelligence, namely the capability of a group to act collectively in a seemingly intelligent way, is increasingly often a design goal of engineered computational systems--motivated by recent techno-scientific trends like the Internet of Things, swarm robotics, and crowd computing, just to name a few. For several years, the collective intelligence observed in natural and artificial systems has served as a source of inspiration for engineering ideas, models, and mechanisms. Today, artificial and computational collective intelligence are recognised research topics, spanning various techniques, kinds of target systems, and application domains. However, there is still a lot of fragmentation in the research panorama of the topic within computer science, and the verticality of most communities and contributions makes it difficult to extract the core underlying ideas and frames of reference. The challenge is to identify, place in a common structure, and ultimately connect the different areas and methods addressing intelligent collectives. To address this gap, this paper considers a set of broad scoping questions providing a map of collective intelligence research, mostly by the point of view of computer scientists and engineers. Accordingly, it covers preliminary notions, fundamental concepts, and the main research perspectives, identifying opportunities and challenges for researchers on artificial and computational collective intelligence engineering.
