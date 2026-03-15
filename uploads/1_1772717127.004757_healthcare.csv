@@ -1,0 +1,11 @@
+PatientID,Name,Age,Gender,Diagnosis,Medication,Doctor,VisitDate,Hospital,Cost
+P001,Arjun Mehta,45,M,Diabetes,Metformin,Dr. Sharma,2026-02-10,CityCare Hospital,1500
+P002,Neha Singh,32,F,Hypertension,Amlodipine,Dr. Rao,2026-02-12,Metro Health,1200
+P003,Ravi Patel,60,M,Asthma,Salbutamol,Dr. Iyer,2026-02-15,Sunrise Clinic,800
+P004,Pooja Desai,27,F,Migraine,Sumatriptan,Dr. Kapoor,2026-02-18,Wellness Center,950
+P005,Amit Verma,50,M,Heart Disease,Aspirin,Dr. Joshi,2026-02-20,CityCare Hospital,2500
+P006,Kiran Nair,40,F,Arthritis,Ibuprofen,Dr. Menon,2026-02-22,Metro Health,1100
+P007,Sunil Gupta,35,M,Depression,Sertraline,Dr. Banerjee,2026-02-25,Sunrise Clinic,1300
+P008,Meera Kulkarni,29,F,Thyroid Disorder,Levothyroxine,Dr. Sharma,2026-02-27,Wellness Center,900
+P009,Rahul Jain,55,M,Cholesterol,Atorvastatin,Dr. Rao,2026-03-01,CityCare Hospital,1600
+P010,Anita Roy,38,F,Anemia,Iron Supplements,Dr. Kapoor,2026-03-03,Metro Health,700

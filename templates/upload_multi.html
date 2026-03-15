@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Multiple Datasets{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">Upload Multiple Datasets (Cross-Domain)</h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>How Cross-Domain Knowledge Graph Works:</strong>
+                    <ul class="mb-0 mt-2">
+                        <li>Upload at least 2 files from different domains</li>
+                        <li>System extracts entities from each file separately</li>
+                        <li>Finds relationships BETWEEN different domains</li>
+                        <li>Example: "Einstein" (Science) → "Theory of Relativity" (Physics)</li>
+                        <li>Admin can approve/reject cross-domain relations</li>
+                    </ul>
+                </div>
+                
+                <form method="POST" action="{{ url_for('upload_multi') }}" enctype="multipart/form-data">
+                    <div id="file-inputs">
+                        <div class="row mb-3 file-row">
+                            <div class="col-md-6">
+                                <label class="form-label">Select File 1</label>
+                                <input type="file" class="form-control" name="files" accept=".txt,.csv" required>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label">Domain</label>
+                                <select class="form-select" name="domains" required>
+                                    <option value="">Select Domain</option>
+                                    <option value="Healthcare">Healthcare</option>
+                                    <option value="Artificial Intelligence">AI</option>
+                                    <option value="Law">Law</option>
+                                    <option value="Science">Science</option>
+                                    <option value="Technology">Technology</option>
+                                    <option value="Business">Business</option>
+                                    <option value="History">History</option>
+                                    <option value="Literature">Literature</option>
+                                </select>
+                            </div>
+                            <div class="col-md-1">
+                                <label class="form-label">&nbsp;</label>
+                                <button type="button" class="btn btn-danger remove-file" style="display: none;">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <button type="button" class="btn btn-secondary" id="add-more">
+                                <i class="bi bi-plus-circle"></i> Add Another File
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6>Example Cross-Domain Pairs:</h6>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <strong>Science + Technology:</strong><br>
+                                            "Quantum Computing" + "Artificial Intelligence"
+                                        </div>
+                                        <div class="col-md-4">
+                                            <strong>Healthcare + AI:</strong><br>
+                                            "Medical Diagnosis" + "Machine Learning"
+                                        </div>
+                                        <div class="col-md-4">
+                                            <strong>Law + Business:</strong><br>
+                                            "Corporate Law" + "Startup Companies"
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-cloud-upload"></i> Upload & Process Cross-Domain
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+let fileCount = 1;
+
+document.getElementById('add-more').addEventListener('click', function() {
+    fileCount++;
+    const template = `
+        <div class="row mb-3 file-row">
+            <div class="col-md-6">
+                <label class="form-label">Select File ${fileCount}</label>
+                <input type="file" class="form-control" name="files" accept=".txt,.csv" required>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label">Domain</label>
+                <select class="form-select" name="domains" required>
+                    <option value="">Select Domain</option>
+                    <option value="Healthcare">Healthcare</option>
+                    <option value="Artificial Intelligence">AI</option>
+                    <option value="Law">Law</option>
+                    <option value="Science">Science</option>
+                    <option value="Technology">Technology</option>
+                    <option value="Business">Business</option>
+                    <option value="History">History</option>
+                    <option value="Literature">Literature</option>
+                </select>
+            </div>
+            <div class="col-md-1">
+                <label class="form-label">&nbsp;</label>
+                <button type="button" class="btn btn-danger remove-file">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('file-inputs').insertAdjacentHTML('beforeend', template);
+    
+    // Show remove buttons on all but first file
+    document.querySelectorAll('.remove-file').forEach(btn => {
+        btn.style.display = 'block';
+    });
+});
+
+// Remove file row
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.remove-file')) {
+        e.target.closest('.file-row').remove();
+        fileCount--;
+        
+        // Hide remove button if only one file left
+        if (document.querySelectorAll('.file-row').length === 1) {
+            document.querySelector('.remove-file').style.display = 'none';
+        }
+    }
+});
+</script>
+{% endblock %}
+{% endblock %}

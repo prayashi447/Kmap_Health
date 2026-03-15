@@ -1,0 +1,292 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2>Admin Dashboard</h2>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <h6>Total Users</h6>
+                <h3>{{ stats.total_users }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <h6>Total Datasets</h6>
+                <h3>{{ stats.total_datasets }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-info">
+            <div class="card-body">
+                <h6>Total Entities</h6>
+                <h3>{{ stats.total_entities }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning">
+            <div class="card-body">
+                <h6>Pending Relations</h6>
+                <h3>{{ stats.pending_relations }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabs -->
+<ul class="nav nav-tabs mb-3" id="adminTabs" role="tablist">
+    <li class="nav-item">
+        <button class="nav-link active" id="users-tab" data-bs-toggle="tab" data-bs-target="#users" type="button" role="tab">
+            Users
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" id="datasets-tab" data-bs-toggle="tab" data-bs-target="#datasets" type="button" role="tab">
+            Datasets
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" id="relations-tab" data-bs-toggle="tab" data-bs-target="#relations" type="button" role="tab">
+            Pending Relations
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" id="merge-tab" data-bs-toggle="tab" data-bs-target="#merge" type="button" role="tab">
+            Merge Entities
+        </button>
+    </li>
+</ul>
+
+<!-- Tab Content -->
+<div class="tab-content">
+    <!-- Users Tab -->
+    <div class="tab-pane fade show active" id="users" role="tabpanel">
+        <div class="card">
+            <div class="card-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Admin</th>
+                            <th>Joined</th>
+                            <th>Datasets</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>{{ user.id }}</td>
+                            <td>{{ user.username }}</td>
+                            <td>{{ user.email }}</td>
+                            <td>
+                                {% if user.is_admin %}
+                                <span class="badge bg-success">Yes</span>
+                                {% else %}
+                                <span class="badge bg-secondary">No</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ user.datasets|length }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Datasets Tab -->
+    <div class="tab-pane fade" id="datasets" role="tabpanel">
+        <div class="card">
+            <div class="card-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Domain</th>
+                            <th>User</th>
+                            <th>Uploaded</th>
+                            <th>Processed</th>
+                            <th>Entities</th>
+                            <th>Relations</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for dataset in datasets %}
+                        <tr>
+                            <td>{{ dataset.id }}</td>
+                            <td>{{ dataset.name }}</td>
+                            <td>{{ dataset.domain }}</td>
+                            <td>{{ dataset.user.username }}</td>
+                            <td>{{ dataset.uploaded_at.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                {% if dataset.processed %}
+                                <span class="badge bg-success">Yes</span>
+                                {% else %}
+                                <span class="badge bg-warning">No</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ dataset.entities|length }}</td>
+                            <td>{{ dataset.relations|length }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Pending Relations Tab -->
+    <div class="tab-pane fade" id="relations" role="tabpanel">
+        <div class="card">
+            <div class="card-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Entity 1</th>
+                            <th>Relation</th>
+                            <th>Entity 2</th>
+                            <th>Confidence</th>
+                            <th>Dataset</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for relation in relations if not relation.approved %}
+                        <tr>
+                            <td>{{ relation.id }}</td>
+                            <td>{{ relation.entity1.name }}</td>
+                            <td>{{ relation.relation_type }}</td>
+                            <td>{{ relation.entity2.name }}</td>
+                            <td>{{ "%.2f"|format(relation.confidence) }}</td>
+                            <td>{{ relation.dataset.name }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-success" onclick="approveRelation({{ relation.id }})">
+                                    Approve
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Merge Entities Tab -->
+    <div class="tab-pane fade" id="merge" role="tabpanel">
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="form-label">Select Entity 1 (Keep this)</label>
+                        <select class="form-select mb-3" id="entity1">
+                            <option value="">Select entity...</option>
+                            {% for entity in entities %}
+                            <option value="{{ entity.id }}">{{ entity.name }} ({{ entity.type }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Select Entity 2 (Merge into Entity 1)</label>
+                        <select class="form-select mb-3" id="entity2">
+                            <option value="">Select entity...</option>
+                            {% for entity in entities %}
+                            <option value="{{ entity.id }}">{{ entity.name }} ({{ entity.type }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <button class="btn btn-warning" onclick="mergeEntities()">
+                    <i class="bi bi-diagram-3"></i> Merge Entities
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function approveRelation(relationId) {
+    fetch(`/api/approve_relation/${relationId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Relation approved successfully!');
+            location.reload();
+        } else {
+            alert('Error approving relation');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error approving relation');
+    });
+}
+
+function mergeEntities() {
+    const entity1 = document.getElementById('entity1').value;
+    const entity2 = document.getElementById('entity2').value;
+    
+    if (!entity1 || !entity2) {
+        alert('Please select both entities');
+        return;
+    }
+    
+    if (entity1 === entity2) {
+        alert('Please select different entities');
+        return;
+    }
+    
+    if (!confirm('Are you sure you want to merge entity ' + entity2 + ' into entity ' + entity1 + '?')) {
+        return;
+    }
+    
+    fetch('/api/merge_entities', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            entity1_id: parseInt(entity1),
+            entity2_id: parseInt(entity2)
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Entities merged successfully!');
+            location.reload();
+        } else {
+            alert('Error merging entities');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error merging entities');
+    });
+}
+</script>
+{% endblock %}
