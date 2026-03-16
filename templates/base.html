@@ -6,48 +6,307 @@
     <title>Knowledge Graph System - {% block title %}{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+    <style>
+        /* ── Global Reset & Tokens ── */
+        :root {
+            --blue-950: #020b1a;
+            --blue-900: #051428;
+            --blue-800: #0a2240;
+            --blue-700: #0d3260;
+            --blue-600: #1048a0;
+            --blue-500: #1a6ef5;
+            --blue-400: #4d93ff;
+            --blue-300: #80b4ff;
+            --blue-200: #b3d2ff;
+            --blue-100: #ddeeff;
+            --accent-cyan: #00d4ff;
+            --accent-teal: #0af5e0;
+            --surface-1: rgba(10, 34, 64, 0.85);
+            --border-blue: rgba(77, 147, 255, 0.2);
+            --text-primary: #e8f2ff;
+            --text-secondary: rgba(179, 210, 255, 0.7);
+            --shadow-card: 0 4px 24px rgba(2, 11, 26, 0.5);
+            --nav-height: 64px;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; }
+
+        html, body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--blue-950);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ── Animated deep-space background ── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 80% 55% at 8%  4%,  rgba(26,110,245,.17) 0%, transparent 60%),
+                radial-gradient(ellipse 55% 50% at 92% 88%, rgba(0,212,255,.12)  0%, transparent 60%),
+                radial-gradient(ellipse 40% 40% at 50% 50%, rgba(10,245,224,.05) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(77,147,255,.035) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(77,147,255,.035) 1px, transparent 1px);
+            background-size: 48px 48px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── Navbar ── */
+        .navbar {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            height: var(--nav-height);
+            background: rgba(5, 20, 40, 0.82) !important;
+            backdrop-filter: blur(20px) saturate(1.4);
+            -webkit-backdrop-filter: blur(20px) saturate(1.4);
+            border-bottom: 1px solid var(--border-blue);
+            box-shadow: 0 4px 32px rgba(2, 11, 26, 0.45);
+            padding: 0 1.5rem;
+        }
+
+        .navbar-brand {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.15rem;
+            font-weight: 800;
+            letter-spacing: -.3px;
+            background: linear-gradient(135deg, #fff 30%, var(--accent-cyan) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: flex;
+            align-items: center;
+            gap: .45rem;
+            text-decoration: none;
+        }
+
+        .navbar-brand i {
+            background: linear-gradient(135deg, var(--blue-400), var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 1.3rem;
+        }
+
+        .navbar-brand::before {
+            content: '';
+            display: inline-block;
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--accent-cyan);
+            box-shadow: 0 0 8px var(--accent-cyan);
+            flex-shrink: 0;
+        }
+
+        /* Nav links */
+        .navbar-nav { gap: .15rem; align-items: center; }
+
+        .nav-link {
+            font-family: 'DM Sans', sans-serif;
+            font-size: .85rem;
+            font-weight: 500;
+            color: var(--blue-200) !important;
+            padding: .45rem .85rem !important;
+            border-radius: 10px;
+            border: 1px solid transparent;
+            display: flex;
+            align-items: center;
+            gap: .4rem;
+            transition: all .2s ease;
+            white-space: nowrap;
+        }
+
+        .nav-link i { font-size: .9rem; }
+
+        .nav-link:hover {
+            color: #fff !important;
+            background: rgba(26, 110, 245, 0.18);
+            border-color: var(--border-blue);
+        }
+
+        .nav-link.active {
+            color: #fff !important;
+            background: rgba(26, 110, 245, 0.22);
+            border-color: rgba(77, 147, 255, 0.35);
+        }
+
+        /* Logout special style */
+        .nav-link.logout {
+            color: rgba(248, 113, 113, 0.85) !important;
+        }
+
+        .nav-link.logout:hover {
+            color: #fca5a5 !important;
+            background: rgba(239, 68, 68, 0.12);
+            border-color: rgba(239, 68, 68, 0.25);
+        }
+
+        /* Navbar toggler */
+        .navbar-toggler {
+            border: 1px solid var(--border-blue) !important;
+            border-radius: 10px !important;
+            padding: .35rem .55rem !important;
+        }
+
+        .navbar-toggler:focus { box-shadow: 0 0 0 3px rgba(77,147,255,.2) !important; }
+
+        .navbar-toggler-icon {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(77,147,255,0.9)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e") !important;
+        }
+
+        /* Collapsed nav on mobile */
+        .navbar-collapse {
+            background: rgba(5, 20, 40, 0.97);
+            border: 1px solid var(--border-blue);
+            border-radius: 16px;
+            margin-top: .5rem;
+            padding: .75rem 1rem;
+        }
+
+        @media (min-width: 992px) {
+            .navbar-collapse {
+                background: transparent !important;
+                border: none !important;
+                border-radius: 0 !important;
+                margin-top: 0 !important;
+                padding: 0 !important;
+            }
+        }
+
+        /* Admin badge highlight */
+        .nav-link.admin-link {
+            color: var(--accent-cyan) !important;
+            border-color: rgba(0, 212, 255, 0.15);
+        }
+
+        .nav-link.admin-link:hover {
+            background: rgba(0, 212, 255, 0.1);
+            border-color: rgba(0, 212, 255, 0.3);
+        }
+
+        /* ── Main content wrapper ── */
+        main.container {
+            position: relative;
+            z-index: 1;
+            padding-top: 2rem;
+            padding-bottom: 3rem;
+            max-width: 1400px;
+        }
+
+        /* ── Flash Alerts ── */
+        .alert {
+            background: rgba(10, 34, 64, 0.9) !important;
+            border: 1px solid var(--border-blue) !important;
+            border-left: 3px solid var(--blue-400) !important;
+            border-radius: 14px !important;
+            color: var(--text-primary) !important;
+            backdrop-filter: blur(16px);
+            font-size: .88rem;
+            font-weight: 500;
+            box-shadow: var(--shadow-card);
+            animation: slideInAlert .35s ease both;
+        }
+
+        .alert-info  { border-left-color: var(--blue-400) !important; }
+        .alert-success { border-left-color: var(--accent-teal) !important; }
+        .alert-warning { border-left-color: #fbbf24 !important; }
+        .alert-danger  { border-left-color: #f87171 !important; }
+
+        .btn-close {
+            filter: invert(1) !important;
+            opacity: .45 !important;
+        }
+
+        .btn-close:hover { opacity: .9 !important; }
+
+        @keyframes slideInAlert {
+            from { opacity: 0; transform: translateY(-10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Scrollbar ── */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--blue-950); }
+        ::-webkit-scrollbar-thumb { background: var(--blue-700); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--blue-500); }
+
+        /* ── Selection ── */
+        ::selection {
+            background: rgba(26, 110, 245, 0.35);
+            color: #fff;
+        }
+    </style>
+
     {% block extra_css %}{% endblock %}
 </head>
 <body>
+
     {% if current_user.is_authenticated %}
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container-fluid">
+
             <a class="navbar-brand" href="{{ url_for('dashboard') }}">
                 <i class="bi bi-diagram-3"></i> Knowledge Graph
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+
+            <button class="navbar-toggler" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
+
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
+
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('dashboard') }}">
                             <i class="bi bi-speedometer2"></i> Dashboard
                         </a>
                     </li>
+
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('upload') }}">
                             <i class="bi bi-cloud-upload"></i> Upload
                         </a>
                     </li>
+
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('search') }}">
                             <i class="bi bi-search"></i> Search
                         </a>
                     </li>
+
                     {% if current_user.is_admin %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('admin') }}">
+                        <a class="nav-link admin-link" href="{{ url_for('admin') }}">
                             <i class="bi bi-shield-lock"></i> Admin
                         </a>
                     </li>
                     {% endif %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('logout') }}">
+
+                    <!-- Divider -->
+                    <li class="nav-item" style="margin-left:.5rem; padding-left:.5rem; border-left:1px solid var(--border-blue);">
+                        <a class="nav-link logout" href="{{ url_for('logout') }}">
                             <i class="bi bi-box-arrow-right"></i> Logout
                         </a>
                     </li>
+
                 </ul>
             </div>
         </div>
@@ -55,23 +314,42 @@
     {% endif %}
 
     <main class="container mt-4">
-        {% with messages = get_flashed_messages() %}
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
-                {% for message in messages %}
-                    <div class="alert alert-info alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category if category != 'message' else 'info' }} alert-dismissible fade show" role="alert">
+                    {% if category == 'success' %}<i class="bi bi-check-circle me-2"></i>
+                    {% elif category == 'danger'  %}<i class="bi bi-exclamation-circle me-2"></i>
+                    {% elif category == 'warning' %}<i class="bi bi-exclamation-triangle me-2"></i>
+                    {% else %}<i class="bi bi-info-circle me-2"></i>{% endif %}
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
                 {% endfor %}
             {% endif %}
         {% endwith %}
-        
+
         {% block content %}{% endblock %}
+
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+    <script>
+        // Auto-mark active nav link
+        document.addEventListener('DOMContentLoaded', function () {
+            const links = document.querySelectorAll('.nav-link');
+            links.forEach(link => {
+                if (link.href && link.href === window.location.href) {
+                    link.classList.add('active');
+                }
+            });
+        });
+    </script>
+
     {% block extra_js %}{% endblock %}
 </body>
 </html>

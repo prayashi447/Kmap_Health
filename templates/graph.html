@@ -4,212 +4,440 @@
 
 {% block extra_css %}
 <style>
-    #graph-container {
-        width: 100%;
-        height: 600px;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        background-color: #f8f9fa;
-    }
-    .node-info {
-        position: absolute;
-        top: 20px;
-        right: 20px;
-        width: 250px;
-        background: white;
-        border-radius: 8px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        padding: 15px;
-        display: none;
-    }
-    .legend {
-        position: absolute;
-        bottom: 20px;
-        left: 20px;
-        background: white;
-        border-radius: 8px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        padding: 10px;
-    }
-    .legend-item {
-        display: flex;
-        align-items: center;
-        margin: 5px 0;
-    }
-    .legend-color {
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        margin-right: 8px;
-    }
+  /* ── Page layout ── */
+  .graph-page {
+    position: relative;
+    z-index: 1;
+    padding: 0 0 3rem;
+    animation: fadeSlideUp .55s ease both;
+  }
+
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Header bar ── */
+  .graph-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .graph-header h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.7rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #fff 30%, #00d4ff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -.4px;
+    margin: 0 0 .35rem;
+  }
+
+  .graph-meta {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    flex-wrap: wrap;
+    font-size: .82rem;
+    color: rgba(179,210,255,.65);
+  }
+
+  .graph-meta i { font-size: .8rem; }
+
+  .pill-domain {
+    display: inline-flex; align-items: center; gap: .3rem;
+    padding: .22rem .7rem;
+    border-radius: 999px;
+    font-size: .75rem;
+    font-weight: 600;
+    background: rgba(0,212,255,.14);
+    color: #00d4ff;
+    border: 1px solid rgba(0,212,255,.25);
+  }
+
+  /* ── Toolbar ── */
+  .graph-toolbar {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    flex-wrap: wrap;
+  }
+
+  .tool-btn {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    border: 1px solid rgba(77,147,255,.22);
+    background: rgba(10,34,64,.7);
+    color: #80b4ff;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: .9rem;
+    transition: all .18s ease;
+    backdrop-filter: blur(12px);
+  }
+
+  .tool-btn:hover {
+    background: rgba(26,110,245,.2);
+    border-color: #4d93ff;
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(26,110,245,.2);
+  }
+
+  /* ── Graph stage ── */
+  .graph-stage {
+    position: relative;
+    border-radius: 20px;
+    overflow: hidden;
+    border: 1px solid rgba(77,147,255,.2);
+    box-shadow: 0 8px 48px rgba(2,11,26,.55);
+  }
+
+  #graph-container {
+    width: 100%;
+    height: 620px;
+    background: radial-gradient(ellipse 70% 60% at 50% 50%, rgba(13,50,96,.55) 0%, rgba(2,11,26,.95) 100%);
+  }
+
+  /* ── Node info panel ── */
+  .node-info-panel {
+    position: absolute;
+    top: 16px; right: 16px;
+    width: 230px;
+    background: rgba(5,20,40,.9);
+    border: 1px solid rgba(77,147,255,.25);
+    border-radius: 16px;
+    backdrop-filter: blur(20px);
+    box-shadow: 0 8px 32px rgba(2,11,26,.5);
+    padding: 1.1rem 1.25rem;
+    display: none;
+    animation: panelIn .2s ease both;
+  }
+
+  @keyframes panelIn {
+    from { opacity: 0; transform: translateX(8px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  .node-info-panel .panel-title {
+    font-family: 'Syne', sans-serif;
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: #4d93ff;
+    margin-bottom: .85rem;
+    display: flex; align-items: center; gap: .4rem;
+  }
+
+  .node-info-panel .close-panel {
+    margin-left: auto;
+    cursor: pointer;
+    color: rgba(179,210,255,.4);
+    font-size: .8rem;
+    transition: color .15s;
+  }
+
+  .node-info-panel .close-panel:hover { color: #fff; }
+
+  .node-info-row {
+    display: flex;
+    align-items: baseline;
+    gap: .5rem;
+    margin-bottom: .55rem;
+    font-size: .83rem;
+  }
+
+  .node-info-row .nir-label {
+    font-size: .7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: rgba(179,210,255,.45);
+    min-width: 64px;
+    flex-shrink: 0;
+  }
+
+  .node-info-row .nir-val {
+    color: #e8f2ff;
+    font-weight: 600;
+    word-break: break-word;
+  }
+
+  .confidence-bar {
+    margin-top: .5rem;
+  }
+
+  .confidence-bar .nir-label { margin-bottom: .3rem; display: block; }
+
+  .bar-track {
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(77,147,255,.15);
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: linear-gradient(to right, #1a6ef5, #00d4ff);
+    width: 85%;
+    transition: width .5s ease;
+  }
+
+  /* ── Legend ── */
+  .graph-legend {
+    position: absolute;
+    bottom: 16px; left: 16px;
+    background: rgba(5,20,40,.88);
+    border: 1px solid rgba(77,147,255,.2);
+    border-radius: 14px;
+    backdrop-filter: blur(16px);
+    padding: .85rem 1.1rem;
+  }
+
+  .legend-title {
+    font-family: 'Syne', sans-serif;
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: #4d93ff;
+    margin-bottom: .65rem;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    margin-bottom: .4rem;
+    font-size: .79rem;
+    color: rgba(179,210,255,.75);
+  }
+
+  .legend-item:last-child { margin-bottom: 0; }
+
+  .legend-dot {
+    width: 11px; height: 11px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 0 6px currentColor;
+  }
+
+  /* ── Stats row below graph ── */
+  .graph-stats {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.25rem;
+    flex-wrap: wrap;
+  }
+
+  .graph-stat-chip {
+    background: rgba(10,34,64,.75);
+    border: 1px solid rgba(77,147,255,.2);
+    border-radius: 12px;
+    padding: .6rem 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    font-size: .83rem;
+    backdrop-filter: blur(12px);
+  }
+
+  .graph-stat-chip i { color: #4d93ff; font-size: .85rem; }
+  .graph-stat-chip strong { color: #fff; font-family: 'Syne', sans-serif; }
+  .graph-stat-chip span  { color: rgba(179,210,255,.6); }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="row mb-3">
-    <div class="col-12">
-        <h2>{{ dataset.name }}</h2>
-        <p class="text-muted">
-            Domain: <span class="badge bg-info">{{ dataset.domain }}</span>
-            Uploaded: {{ dataset.uploaded_at.strftime('%Y-%m-%d %H:%M') }}
-        </p>
-    </div>
-</div>
+<div class="graph-page">
 
-<div class="row">
-    <div class="col-12 position-relative">
-        <div id="graph-container"></div>
-        
-        <!-- Node Info Panel -->
-        <div id="nodeInfo" class="node-info">
-            <h6 id="nodeName"></h6>
-            <p id="nodeType"></p>
-            <p id="nodeConfidence"></p>
-        </div>
-        
-        <!-- Legend -->
-        <div class="legend">
-            <h6>Legend</h6>
-            <div class="legend-item">
-                <div class="legend-color" style="background: #ff6b6b;"></div>
-                <span>Person</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-color" style="background: #4ecdc4;"></div>
-                <span>Organization</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-color" style="background: #45b7d1;"></div>
-                <span>Location</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-color" style="background: #96ceb4;"></div>
-                <span>Other</span>
-            </div>
-        </div>
+  <!-- ── Header ── -->
+  <div class="graph-header">
+    <div>
+      <h2>{{ dataset.name }}</h2>
+      <div class="graph-meta">
+        <span class="pill-domain"><i class="bi bi-tag"></i>{{ dataset.domain }}</span>
+        <i class="bi bi-clock"></i> {{ dataset.uploaded_at.strftime('%Y-%m-%d %H:%M') }}
+      </div>
     </div>
-</div>
 
-<div class="row mt-3">
-    <div class="col-12">
-        <button class="btn btn-outline-primary" onclick="zoomIn()">
-            <i class="bi bi-zoom-in"></i>
-        </button>
-        <button class="btn btn-outline-primary" onclick="zoomOut()">
-            <i class="bi bi-zoom-out"></i>
-        </button>
-        <button class="btn btn-outline-primary" onclick="resetView()">
-            <i class="bi bi-arrow-counterclockwise"></i>
-        </button>
+    <!-- Toolbar -->
+    <div class="graph-toolbar">
+      <button class="tool-btn" onclick="zoomIn()"    title="Zoom In">   <i class="bi bi-zoom-in"></i></button>
+      <button class="tool-btn" onclick="zoomOut()"   title="Zoom Out">  <i class="bi bi-zoom-out"></i></button>
+      <button class="tool-btn" onclick="resetView()" title="Reset View"><i class="bi bi-arrow-counterclockwise"></i></button>
     </div>
+  </div>
+
+  <!-- ── Graph Stage ── -->
+  <div class="graph-stage">
+
+    <div id="graph-container"></div>
+
+    <!-- Node Info Panel -->
+    <div id="nodeInfo" class="node-info-panel">
+      <div class="panel-title">
+        <i class="bi bi-diagram-3"></i> Node Details
+        <i class="bi bi-x close-panel" onclick="document.getElementById('nodeInfo').style.display='none'"></i>
+      </div>
+      <div class="node-info-row">
+        <span class="nir-label">Name</span>
+        <span class="nir-val" id="nodeName">—</span>
+      </div>
+      <div class="node-info-row">
+        <span class="nir-label">Type</span>
+        <span class="nir-val" id="nodeType">—</span>
+      </div>
+      <div class="confidence-bar">
+        <span class="nir-label">Confidence</span>
+        <div class="bar-track"><div class="bar-fill" id="confBar"></div></div>
+      </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="graph-legend">
+      <div class="legend-title">Entity Types</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ff6b8a; color:#ff6b8a;"></div> Person</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#4d93ff; color:#4d93ff;"></div> Organization</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#00d4ff; color:#00d4ff;"></div> Location</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#fbbf24; color:#fbbf24;"></div> Date / Money</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#0af5e0; color:#0af5e0;"></div> Other</div>
+    </div>
+
+  </div>
+
+  <!-- ── Quick stats ── -->
+  <div class="graph-stats">
+    <div class="graph-stat-chip">
+      <i class="bi bi-tags"></i>
+      <strong id="statNodes">—</strong>
+      <span>Entities</span>
+    </div>
+    <div class="graph-stat-chip">
+      <i class="bi bi-share"></i>
+      <strong id="statEdges">—</strong>
+      <span>Relations</span>
+    </div>
+    <div class="graph-stat-chip">
+      <i class="bi bi-check2-circle"></i>
+      <strong id="statApproved">—</strong>
+      <span>Approved</span>
+    </div>
+  </div>
+
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 <script>
-    let network = null;
-    
-    function loadGraph() {
-        fetch(`/api/graph/{{ dataset.id }}`)
-            .then(response => response.json())
-            .then(data => {
-                // Create nodes array
-                const nodes = new vis.DataSet(
-                    data.nodes.map(node => ({
-                        id: node.id,
-                        label: node.label,
-                        title: `${node.label} (${node.type})`,
-                        color: getNodeColor(node.type),
-                        font: { size: 14 }
-                    }))
-                );
-                
-                // Create edges array
-                const edges = new vis.DataSet(
-                    data.edges.map(edge => ({
-                        from: edge.from,
-                        to: edge.to,
-                        label: edge.label,
-                        arrows: 'to',
-                        color: edge.approved ? '#28a745' : '#dc3545',
-                        font: { size: 12, align: 'middle' }
-                    }))
-                );
-                
-                // Create network
-                const container = document.getElementById('graph-container');
-                const networkData = { nodes, edges };
-                const options = {
-                    physics: {
-                        stabilization: true,
-                        barnesHut: {
-                            gravitationalConstant: -8000,
-                            centralGravity: 0.3,
-                            springLength: 95,
-                            springConstant: 0.04
-                        }
-                    },
-                    interaction: {
-                        hover: true,
-                        tooltipDelay: 200,
-                        hideEdgesOnDrag: true
-                    },
-                    layout: {
-                        improvedLayout: true,
-                        hierarchical: false
-                    },
-                    edges: {
-                        smooth: true,
-                        width: 2
-                    }
-                };
-                
-                network = new vis.Network(container, networkData, options);
-                
-                // Handle node click
-                network.on('click', function(params) {
-                    if (params.nodes.length > 0) {
-                        const nodeId = params.nodes[0];
-                        const node = nodes.get(nodeId);
-                        
-                        document.getElementById('nodeName').textContent = node.label;
-                        document.getElementById('nodeType').textContent = 'Type: ' + node.title.split('(')[1]?.replace(')', '');
-                        document.getElementById('nodeConfidence').textContent = 'Confidence: High';
-                        document.getElementById('nodeInfo').style.display = 'block';
-                    } else {
-                        document.getElementById('nodeInfo').style.display = 'none';
-                    }
-                });
-            });
-    }
-    
-    function getNodeColor(type) {
-        const colors = {
-            'PERSON': '#ff6b6b',
-            'ORG': '#4ecdc4',
-            'GPE': '#45b7d1',
-            'LOC': '#45b7d1',
-            'DATE': '#96ceb4',
-            'MONEY': '#feca57',
-            'PERCENT': '#ff9ff3'
-        };
-        return colors[type] || '#96ceb4';
-    }
-    
-    function zoomIn() {
-        if (network) network.moveTo({ scale: network.getScale() * 1.2 });
-    }
-    
-    function zoomOut() {
-        if (network) network.moveTo({ scale: network.getScale() * 0.8 });
-    }
-    
-    function resetView() {
-        if (network) network.fit();
-    }
-    
-    // Load graph on page load
-    document.addEventListener('DOMContentLoaded', loadGraph);
+  let network = null;
+
+  function getNodeColor(type) {
+    const map = {
+      'PERSON':  { background: '#ff6b8a', border: '#ff3366', highlight: { background: '#ff8fa3', border: '#ff3366' } },
+      'ORG':     { background: '#4d93ff', border: '#1a6ef5', highlight: { background: '#80b4ff', border: '#1a6ef5' } },
+      'GPE':     { background: '#00d4ff', border: '#00a8cc', highlight: { background: '#66e3ff', border: '#00a8cc' } },
+      'LOC':     { background: '#00d4ff', border: '#00a8cc', highlight: { background: '#66e3ff', border: '#00a8cc' } },
+      'DATE':    { background: '#fbbf24', border: '#d97706', highlight: { background: '#fcd34d', border: '#d97706' } },
+      'MONEY':   { background: '#fbbf24', border: '#d97706', highlight: { background: '#fcd34d', border: '#d97706' } },
+      'PERCENT': { background: '#c084fc', border: '#9333ea', highlight: { background: '#d8b4fe', border: '#9333ea' } },
+    };
+    return map[type] || { background: '#0af5e0', border: '#06b6a0', highlight: { background: '#5ffaec', border: '#06b6a0' } };
+  }
+
+  function loadGraph() {
+    fetch(`/api/graph/{{ dataset.id }}`)
+      .then(r => r.json())
+      .then(data => {
+
+        const nodes = new vis.DataSet(
+          data.nodes.map(node => ({
+            id:    node.id,
+            label: node.label,
+            title: `${node.label} (${node.type})`,
+            color: getNodeColor(node.type),
+            font:  { size: 13, color: '#e8f2ff', face: 'DM Sans' },
+            borderWidth: 2,
+            shadow: { enabled: true, color: 'rgba(0,0,0,0.4)', size: 8, x: 2, y: 2 }
+          }))
+        );
+
+        const edges = new vis.DataSet(
+          data.edges.map(edge => ({
+            from:  edge.from,
+            to:    edge.to,
+            label: edge.label,
+            arrows: 'to',
+            color: {
+              color:     edge.approved ? 'rgba(10,245,224,0.55)' : 'rgba(248,113,113,0.45)',
+              highlight: edge.approved ? '#0af5e0' : '#f87171',
+              hover:     edge.approved ? '#0af5e0' : '#f87171'
+            },
+            font:  { size: 11, color: 'rgba(179,210,255,0.75)', align: 'middle', face: 'DM Sans' },
+            smooth: { type: 'curvedCW', roundness: 0.15 },
+            width: 1.5,
+            selectionWidth: 2.5
+          }))
+        );
+
+        // Update stats chips
+        document.getElementById('statNodes').textContent    = data.nodes.length;
+        document.getElementById('statEdges').textContent    = data.edges.length;
+        document.getElementById('statApproved').textContent = data.edges.filter(e => e.approved).length;
+
+        const container = document.getElementById('graph-container');
+        network = new vis.Network(container, { nodes, edges }, {
+          physics: {
+            stabilization: { iterations: 150 },
+            barnesHut: {
+              gravitationalConstant: -9000,
+              centralGravity: 0.3,
+              springLength: 110,
+              springConstant: 0.04,
+              damping: 0.09
+            }
+          },
+          interaction: {
+            hover: true,
+            tooltipDelay: 150,
+            hideEdgesOnDrag: true,
+            navigationButtons: false,
+            keyboard: true
+          },
+          layout: { improvedLayout: true, hierarchical: false },
+          edges: { smooth: true, width: 1.5 },
+          nodes: { shape: 'dot', size: 16 }
+        });
+
+        // Node click → show panel
+        network.on('click', params => {
+          if (params.nodes.length > 0) {
+            const node = nodes.get(params.nodes[0]);
+            const typeRaw = node.title.split('(')[1]?.replace(')', '') || 'Unknown';
+            document.getElementById('nodeName').textContent = node.label;
+            document.getElementById('nodeType').textContent = typeRaw;
+            document.getElementById('confBar').style.width  = '85%';
+            document.getElementById('nodeInfo').style.display = 'block';
+          } else {
+            document.getElementById('nodeInfo').style.display = 'none';
+          }
+        });
+      });
+  }
+
+  function zoomIn()    { if (network) network.moveTo({ scale: network.getScale() * 1.25, animation: { duration: 250, easingFunction: 'easeInOutQuad' } }); }
+  function zoomOut()   { if (network) network.moveTo({ scale: network.getScale() * 0.8,  animation: { duration: 250, easingFunction: 'easeInOutQuad' } }); }
+  function resetView() { if (network) network.fit({ animation: { duration: 400, easingFunction: 'easeInOutQuad' } }); }
+
+  document.addEventListener('DOMContentLoaded', loadGraph);
 </script>
 {% endblock %}

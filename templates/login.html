@@ -2,35 +2,543 @@
 
 {% block title %}Login{% endblock %}
 
+{% block extra_css %}
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap');
+ 
+    :root {
+        --grad-a: #6a5af9;
+        --grad-b: #d66efd;
+        --grad-c: #4facfe;
+        --primary-gradient: linear-gradient(135deg, var(--grad-a) 0%, var(--grad-b) 100%);
+        --mesh-gradient:
+            radial-gradient(at 20% 20%, hsla(252, 94%, 67%, 0.55) 0px, transparent 55%),
+            radial-gradient(at 85% 10%, hsla(291, 96%, 72%, 0.45) 0px, transparent 50%),
+            radial-gradient(at 70% 80%, hsla(206, 98%, 65%, 0.4) 0px, transparent 55%),
+            radial-gradient(at 10% 85%, hsla(252, 60%, 40%, 0.3) 0px, transparent 50%);
+        --shadow-card: 0 32px 80px rgba(106, 90, 249, 0.2), 0 8px 24px rgba(0,0,0,0.12);
+        --shadow-hover: 0 48px 100px rgba(106, 90, 249, 0.3), 0 16px 40px rgba(0,0,0,0.18);
+        --glass-bg: rgba(255, 255, 255, 0.72);
+        --glass-border: rgba(255, 255, 255, 0.9);
+        --input-border: rgba(106, 90, 249, 0.18);
+        --text-primary: #1a1230;
+        --text-muted: #7b7192;
+    }
+ 
+    *, *::before, *::after { box-sizing: border-box; }
+ 
+    body {
+        font-family: 'Sora', sans-serif;
+        background: #0f0b1e;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+    }
+ 
+    /* ── Layered background ── */
+    body::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background: var(--mesh-gradient);
+        background-color: #130d2a;
+        filter: blur(0px);
+        z-index: 0;
+    }
+ 
+    /* Noise texture overlay */
+    body::after {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+        opacity: 0.6;
+        z-index: 0;
+        pointer-events: none;
+    }
+ 
+    /* ── Floating orbs ── */
+    .floating-shapes { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
+ 
+    .shape {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(60px);
+        animation: drift linear infinite;
+        opacity: 0.5;
+    }
+ 
+    .shape-1 {
+        width: 420px; height: 420px;
+        background: radial-gradient(circle, rgba(106,90,249,0.6) 0%, transparent 70%);
+        top: -180px; right: -100px;
+        animation-duration: 25s;
+        animation-delay: 0s;
+    }
+ 
+    .shape-2 {
+        width: 300px; height: 300px;
+        background: radial-gradient(circle, rgba(214,110,253,0.5) 0%, transparent 70%);
+        bottom: -120px; left: -80px;
+        animation-duration: 30s;
+        animation-delay: -8s;
+    }
+ 
+    .shape-3 {
+        width: 200px; height: 200px;
+        background: radial-gradient(circle, rgba(79,172,254,0.5) 0%, transparent 70%);
+        bottom: 120px; right: 80px;
+        animation-duration: 20s;
+        animation-delay: -15s;
+    }
+ 
+    .shape-4 {
+        width: 160px; height: 160px;
+        background: radial-gradient(circle, rgba(255,182,100,0.35) 0%, transparent 70%);
+        top: 40%; left: 5%;
+        animation-duration: 35s;
+        animation-delay: -5s;
+    }
+ 
+    @keyframes drift {
+        0%, 100% { transform: translate(0, 0) scale(1); }
+        25%       { transform: translate(20px, -30px) scale(1.05); }
+        50%       { transform: translate(-15px, 20px) scale(0.95); }
+        75%       { transform: translate(10px, 30px) scale(1.03); }
+    }
+ 
+    /* ── Grid lines behind card ── */
+    .grid-bg {
+        position: fixed;
+        inset: 0;
+        z-index: 1;
+        pointer-events: none;
+        background-image:
+            linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+        background-size: 48px 48px;
+        mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, black, transparent);
+    }
+ 
+    /* ── Main column ── */
+    .col-md-6, .col-lg-4 {
+        position: relative;
+        z-index: 10;
+    }
+ 
+    /* ── Card ── */
+    .card {
+        border: 1px solid var(--glass-border);
+        border-radius: 28px;
+        overflow: hidden;
+        background: var(--glass-bg);
+        backdrop-filter: blur(28px) saturate(180%);
+        -webkit-backdrop-filter: blur(28px) saturate(180%);
+        box-shadow: var(--shadow-card);
+        transition: transform 0.4s cubic-bezier(.22,1,.36,1), box-shadow 0.4s ease;
+        animation: cardReveal 0.7s cubic-bezier(.22,1,.36,1) both;
+        position: relative;
+    }
+ 
+    .card:hover {
+        transform: translateY(-6px) scale(1.005);
+        box-shadow: var(--shadow-hover);
+    }
+ 
+    /* Prismatic top border */
+    .card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--grad-a), var(--grad-b), var(--grad-c), var(--grad-a));
+        background-size: 200% 100%;
+        animation: shimmerBorder 4s linear infinite;
+        z-index: 3;
+        border-radius: 28px 28px 0 0;
+    }
+ 
+    /* Subtle inner glow */
+    .card::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: 28px;
+        background: linear-gradient(160deg, rgba(255,255,255,0.5) 0%, transparent 40%);
+        pointer-events: none;
+        z-index: 0;
+    }
+ 
+    @keyframes shimmerBorder {
+        0%   { background-position: 0% 0%; }
+        100% { background-position: 200% 0%; }
+    }
+ 
+    @keyframes cardReveal {
+        from { opacity: 0; transform: translateY(28px) scale(0.97); }
+        to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+ 
+    .card-body {
+        position: relative;
+        z-index: 2;
+        padding: 2.8rem !important;
+    }
+ 
+    /* ── Logo icon ── */
+    .bi-diagram-3 {
+        font-size: 2.8rem;
+        background: var(--primary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        display: block;
+        filter: drop-shadow(0 4px 12px rgba(106, 90, 249, 0.5));
+        animation: iconPulse 3s ease-in-out infinite;
+    }
+ 
+    @keyframes iconPulse {
+        0%, 100% { filter: drop-shadow(0 4px 12px rgba(106,90,249,0.4)); }
+        50%       { filter: drop-shadow(0 4px 24px rgba(214,110,253,0.7)); }
+    }
+ 
+    /* ── Headings ── */
+    h2 {
+        font-family: 'Instrument Serif', Georgia, serif;
+        font-style: italic;
+        font-weight: 400;
+        font-size: 2.1rem;
+        letter-spacing: -0.01em;
+        background: var(--primary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 0.25rem;
+        line-height: 1.15;
+    }
+ 
+    h4 {
+        color: var(--text-muted);
+        font-weight: 400;
+        font-size: 0.82rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        position: relative;
+        display: inline-block;
+        padding-bottom: 14px;
+    }
+ 
+    h4::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 36px;
+        height: 2px;
+        background: var(--primary-gradient);
+        border-radius: 4px;
+    }
+ 
+    /* ── Divider pill ── */
+    .auth-divider {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 1.6rem 0 1.4rem;
+    }
+ 
+    .auth-divider span {
+        flex: 1;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(106,90,249,0.2), transparent);
+    }
+ 
+    .auth-divider small {
+        font-size: 0.7rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+    }
+ 
+    /* ── Form labels ── */
+    .form-label {
+        font-weight: 500;
+        color: var(--text-primary);
+        margin-bottom: 0.45rem;
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        opacity: 0.75;
+    }
+ 
+    /* ── Input group ── */
+    .input-group {
+        border-radius: 14px;
+        box-shadow: 0 2px 8px rgba(106,90,249,0.06);
+        transition: box-shadow 0.3s ease;
+    }
+ 
+    .input-group:focus-within {
+        box-shadow: 0 0 0 3px rgba(106,90,249,0.15), 0 4px 16px rgba(106,90,249,0.1);
+    }
+ 
+    .input-group-text {
+        background: rgba(106,90,249,0.06);
+        border: 1.5px solid var(--input-border);
+        border-right: none;
+        border-radius: 14px 0 0 14px;
+        color: var(--grad-a);
+        padding: 0 14px;
+        transition: all 0.3s ease;
+    }
+ 
+    .input-group:focus-within .input-group-text {
+        background: rgba(106,90,249,0.1);
+        border-color: rgba(106,90,249,0.4);
+        color: var(--grad-b);
+    }
+ 
+    .form-control {
+        border: 1.5px solid var(--input-border);
+        border-left: none;
+        border-radius: 0 14px 14px 0;
+        padding: 13px 16px;
+        font-size: 0.95rem;
+        font-family: 'Sora', sans-serif;
+        color: var(--text-primary);
+        background: rgba(255,255,255,0.6);
+        transition: all 0.3s ease;
+        backdrop-filter: blur(4px);
+    }
+ 
+    .form-control::placeholder { color: #c0bdd8; font-size: 0.9rem; }
+ 
+    .form-control:focus {
+        border-color: rgba(106,90,249,0.4);
+        box-shadow: none;
+        outline: none;
+        background: rgba(255,255,255,0.85);
+    }
+ 
+    /* ── Primary button ── */
+    .btn-primary {
+        background: var(--primary-gradient);
+        border: none;
+        border-radius: 14px;
+        padding: 14px 24px;
+        font-family: 'Sora', sans-serif;
+        font-weight: 600;
+        font-size: 0.88rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        transition: all 0.35s cubic-bezier(.22,1,.36,1);
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 6px 20px rgba(106,90,249,0.35);
+    }
+ 
+    /* Shine sweep */
+    .btn-primary::before {
+        content: '';
+        position: absolute;
+        top: 0; left: -120%;
+        width: 80%; height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+        transform: skewX(-20deg);
+        transition: left 0.6s ease;
+    }
+ 
+    .btn-primary:hover {
+        transform: translateY(-2px) scale(1.01);
+        box-shadow: 0 12px 32px rgba(106,90,249,0.45);
+    }
+ 
+    .btn-primary:hover::before { left: 140%; }
+ 
+    .btn-primary:active {
+        transform: translateY(0) scale(0.99);
+        box-shadow: 0 4px 12px rgba(106,90,249,0.3);
+    }
+ 
+    /* ── Outline button ── */
+    .btn-outline-primary {
+        border: 1.5px solid rgba(106,90,249,0.35);
+        border-radius: 14px;
+        color: var(--grad-a);
+        font-family: 'Sora', sans-serif;
+        font-weight: 500;
+        font-size: 0.86rem;
+        letter-spacing: 0.06em;
+        background: rgba(106,90,249,0.04);
+        transition: all 0.3s ease;
+        padding: 12px 24px;
+        backdrop-filter: blur(4px);
+    }
+ 
+    .btn-outline-primary:hover {
+        background: rgba(106,90,249,0.1);
+        border-color: rgba(106,90,249,0.6);
+        color: var(--grad-a);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 18px rgba(106,90,249,0.15);
+    }
+ 
+    /* ── Checkbox + links ── */
+    .form-check-input {
+        border: 1.5px solid rgba(106,90,249,0.3);
+        border-radius: 5px;
+        width: 16px; height: 16px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+ 
+    .form-check-input:checked {
+        background-color: var(--grad-a);
+        border-color: var(--grad-a);
+    }
+ 
+    .form-check-label {
+        font-size: 0.82rem;
+        color: var(--text-muted);
+        cursor: pointer;
+    }
+ 
+    .text-muted { color: var(--text-muted) !important; font-size: 0.85rem; }
+ 
+    a.text-muted { text-decoration: none; transition: color 0.2s ease; }
+    a.text-muted:hover { color: var(--grad-a) !important; }
+ 
+    .text-center a {
+        color: var(--grad-a);
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+ 
+    .text-center a::after {
+        content: '';
+        position: absolute;
+        bottom: -2px; left: 0;
+        width: 0; height: 1.5px;
+        background: var(--primary-gradient);
+        transition: width 0.3s ease;
+    }
+ 
+    .text-center a:hover { color: var(--grad-b); }
+    .text-center a:hover::after { width: 100%; }
+ 
+    /* ── Staggered field animations ── */
+    .mb-4:nth-child(1) { animation: fieldReveal 0.5s 0.3s both; }
+    .mb-4:nth-child(2) { animation: fieldReveal 0.5s 0.45s both; }
+    .btn-primary       { animation: fieldReveal 0.5s 0.6s both; }
+ 
+    @keyframes fieldReveal {
+        from { opacity: 0; transform: translateX(-12px); }
+        to   { opacity: 1; transform: translateX(0); }
+    }
+ 
+    /* ── Credential hint box ── */
+    .alert-info {
+        background: linear-gradient(135deg, rgba(106,90,249,0.06) 0%, rgba(214,110,253,0.06) 100%);
+        border: 1px solid rgba(106,90,249,0.15);
+        border-radius: 14px;
+        color: var(--text-muted);
+        padding: 14px 18px;
+        margin-top: 20px;
+        position: relative;
+        overflow: hidden;
+        backdrop-filter: blur(4px);
+    }
+ 
+    .alert-info::before {
+        content: '✦';
+        position: absolute;
+        top: 8px; right: 12px;
+        font-size: 14px;
+        opacity: 0.25;
+        color: var(--grad-b);
+    }
+ 
+    .alert-info small {
+        font-weight: 500;
+        display: block;
+        text-align: center;
+        font-size: 0.78rem;
+        letter-spacing: 0.03em;
+    }
+ 
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+        .card-body { padding: 2rem !important; }
+        h2 { font-size: 1.7rem; }
+        .bi-diagram-3 { font-size: 2.2rem; }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
+<!-- Optional floating shapes background -->
+<div class="floating-shapes">
+    <div class="shape shape-1"></div>
+    <div class="shape shape-2"></div>
+    <div class="shape shape-3"></div>
+</div>
+
 <div class="row justify-content-center">
     <div class="col-md-6 col-lg-4">
         <div class="card shadow-lg">
             <div class="card-body p-5">
-                <h2 class="text-center mb-4">
-                    <i class="bi bi-diagram-3 text-primary"></i>
-                    Knowledge Graph
-                </h2>
-                <h4 class="text-center mb-4">Login</h4>
+                <div class="text-center">
+                    <i class="bi bi-diagram-3"></i>
+                </div>
+                <h2 class="text-center mb-2">KMap-Health</h2>
                 
                 <form method="POST" action="{{ url_for('login') }}">
-                    <div class="mb-3">
-                        <label for="email" class="form-label">Email</label>
-                        <input type="email" class="form-control" id="email" name="email" required>
+                    <div class="mb-4">
+                        <label for="email" class="form-label">Email Address</label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-envelope"></i>
+                            </span>
+                            <input type="email" class="form-control" id="email" name="email" 
+                                   placeholder="Enter your email" required>
+                        </div>
                     </div>
-                    <div class="mb-3">
+                    
+                    <div class="mb-4">
                         <label for="password" class="form-label">Password</label>
-                        <input type="password" class="form-control" id="password" name="password" required>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-lock"></i>
+                            </span>
+                            <input type="password" class="form-control" id="password" name="password" 
+                                   placeholder="Enter your password" required>
+                        </div>
                     </div>
-                    <button type="submit" class="btn btn-primary w-100">Login</button>
+                    
+                    <button type="submit" class="btn btn-primary w-100 mb-3">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>Login
+                    </button>
+                    
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="remember">
+                            <label class="form-check-label" for="remember">Remember me</label>
+                        </div>
+                        <a href="#" class="text-muted small">Forgot password?</a>
+                    </div>
                 </form>
                 
-                <div class="text-center mt-3">
-                    <a href="{{ url_for('register') }}">Don't have an account? Register</a>
-                </div>
-                
-                <div class="alert alert-info mt-3">
-                    <small>Demo Admin: admin@example.com / admin123</small>
+                <div class="text-center mt-4">
+                    <p class="text-muted mb-2">Don't have an account?</p>
+                    <a href="{{ url_for('register') }}" class="btn btn-outline-primary w-100">
+                        <i class="bi bi-person-plus me-2"></i>Create Account
+                    </a>
                 </div>
             </div>
         </div>

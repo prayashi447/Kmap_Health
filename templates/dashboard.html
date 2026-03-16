@@ -2,462 +2,1082 @@
 
 {% block title %}Dashboard{% endblock %}
 
+{% block extra_css %}
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+
+  :root {
+    --blue-950: #020b1a;
+    --blue-900: #051428;
+    --blue-800: #0a2240;
+    --blue-700: #0d3260;
+    --blue-600: #1048a0;
+    --blue-500: #1a6ef5;
+    --blue-400: #4d93ff;
+    --blue-300: #80b4ff;
+    --blue-200: #b3d2ff;
+    --blue-100: #ddeeff;
+    --blue-50:  #eef6ff;
+    --accent-cyan: #00d4ff;
+    --accent-glow: rgba(26, 110, 245, 0.35);
+    --accent-teal: #0af5e0;
+    --surface-1: rgba(10, 34, 64, 0.85);
+    --surface-2: rgba(13, 50, 96, 0.6);
+    --border-blue: rgba(77, 147, 255, 0.2);
+    --text-primary: #e8f2ff;
+    --text-secondary: rgba(179, 210, 255, 0.7);
+    --shadow-blue: 0 8px 32px rgba(10, 110, 245, 0.18);
+    --shadow-card: 0 4px 24px rgba(2, 11, 26, 0.5);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--blue-950);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Animated background ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 10% 5%,  rgba(26,110,245,.18) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 50% at 90% 90%, rgba(0,212,255,.12) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 40% at 50% 50%, rgba(10,245,224,.06) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(77,147,255,.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(77,147,255,.04) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .dashboard-wrapper {
+    position: relative;
+    z-index: 1;
+    padding: 2rem 2.5rem;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  /* ── Header ── */
+  .dashboard-header {
+    margin-bottom: 2.5rem;
+    animation: fadeSlideDown .6s ease both;
+  }
+
+  .dashboard-header h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 2.2rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #fff 30%, var(--accent-cyan) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -.5px;
+    line-height: 1.1;
+  }
+
+  .dashboard-header p {
+    color: var(--text-secondary);
+    margin-top: .4rem;
+    font-size: .95rem;
+  }
+
+  /* ── Section Labels ── */
+  .section-label {
+    font-family: 'Syne', sans-serif;
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: var(--blue-400);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+  }
+
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, var(--border-blue), transparent);
+  }
+
+  /* ── Stats Cards ── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+    margin-bottom: 2.5rem;
+    animation: fadeSlideDown .65s ease .1s both;
+  }
+
+  .stat-card {
+    background: var(--surface-1);
+    border: 1px solid var(--border-blue);
+    border-radius: 20px;
+    padding: 1.5rem 1.75rem;
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(20px);
+    box-shadow: var(--shadow-card);
+    transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+  }
+
+  .stat-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(77,147,255,.5);
+    box-shadow: 0 12px 40px rgba(26,110,245,.22);
+  }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(to right, var(--blue-500), var(--accent-cyan));
+    opacity: 0;
+    transition: opacity .25s;
+  }
+
+  .stat-card:hover::before { opacity: 1; }
+
+  .stat-card .stat-icon {
+    width: 52px; height: 52px;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    flex-shrink: 0;
+  }
+
+  .stat-card.blue  .stat-icon { background: rgba(26,110,245,.18); color: var(--blue-400); }
+  .stat-card.teal  .stat-icon { background: rgba(0,212,255,.14);  color: var(--accent-cyan); }
+  .stat-card.green .stat-icon { background: rgba(10,245,224,.12); color: var(--accent-teal); }
+
+  .stat-card .stat-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 2.4rem;
+    font-weight: 800;
+    line-height: 1;
+    color: #fff;
+    letter-spacing: -1px;
+  }
+
+  .stat-card .stat-label {
+    font-size: .8rem;
+    color: var(--text-secondary);
+    margin-top: .3rem;
+    font-weight: 500;
+  }
+
+  .stat-card .stat-sub {
+    margin-top: .85rem;
+    padding-top: .85rem;
+    border-top: 1px solid var(--border-blue);
+    font-size: .78rem;
+    color: var(--blue-300);
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+  }
+
+  .stat-card .stat-sub i { font-size: .8rem; }
+
+  .stat-bg-icon {
+    position: absolute;
+    right: 1rem; bottom: -0.5rem;
+    font-size: 5rem;
+    opacity: .04;
+    pointer-events: none;
+  }
+
+  /* ── Two-column content row ── */
+  .row-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    margin-bottom: 2.5rem;
+  }
+
+  /* ── Glass Cards ── */
+  .glass-card {
+    background: var(--surface-1);
+    border: 1px solid var(--border-blue);
+    border-radius: 20px;
+    overflow: hidden;
+    backdrop-filter: blur(20px);
+    box-shadow: var(--shadow-card);
+  }
+
+  .glass-card-full {
+    background: var(--surface-1);
+    border: 1px solid var(--border-blue);
+    border-radius: 20px;
+    overflow: hidden;
+    backdrop-filter: blur(20px);
+    box-shadow: var(--shadow-card);
+    margin-bottom: 2.5rem;
+    animation: fadeSlideUp .65s ease .2s both;
+  }
+
+  .card-head {
+    padding: 1.25rem 1.75rem;
+    border-bottom: 1px solid var(--border-blue);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(10,34,64,.4);
+  }
+
+  .card-head h5 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--blue-200);
+    margin: 0;
+  }
+
+  .card-body-inner {
+    padding: 1.5rem 1.75rem;
+  }
+
+  /* ── Quick Actions ── */
+  .quick-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+  }
+
+  .action-btn {
+    background: var(--surface-2);
+    border: 1px solid var(--border-blue);
+    border-radius: 16px;
+    padding: 1.2rem 1rem;
+    text-align: center;
+    text-decoration: none;
+    color: var(--text-primary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .5rem;
+    transition: all .25s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .action-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(26,110,245,.15), rgba(0,212,255,.08));
+    opacity: 0;
+    transition: opacity .25s;
+    border-radius: inherit;
+  }
+
+  .action-btn:hover { transform: translateY(-3px); border-color: var(--blue-400); color: #fff; }
+  .action-btn:hover::before { opacity: 1; }
+
+  .action-btn i { font-size: 1.7rem; color: var(--blue-400); }
+  .action-btn span { font-weight: 600; font-size: .88rem; }
+  .action-btn small { color: var(--text-secondary); font-size: .75rem; }
+
+  /* ── Import Cards ── */
+  .import-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+
+  .import-card {
+    background: var(--surface-2);
+    border: 1px solid var(--border-blue);
+    border-radius: 16px;
+    padding: 1.5rem;
+    transition: border-color .25s, box-shadow .25s;
+  }
+
+  .import-card:hover {
+    border-color: rgba(77,147,255,.5);
+    box-shadow: 0 8px 32px rgba(26,110,245,.15);
+  }
+
+  .import-card .import-icon-wrap {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem;
+    margin-bottom: 1rem;
+  }
+
+  .import-card.wiki .import-icon-wrap  { background: rgba(26,110,245,.2);  color: var(--blue-400); }
+  .import-card.arxiv .import-icon-wrap { background: rgba(10,245,224,.15);  color: var(--accent-teal); }
+
+  .import-card h5 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: .95rem;
+    color: var(--blue-200);
+    margin-bottom: .4rem;
+  }
+
+  .import-card p {
+    font-size: .8rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+    line-height: 1.5;
+  }
+
+  /* ── Custom Input Group ── */
+  .input-row {
+    display: flex;
+    gap: .5rem;
+    flex-wrap: wrap;
+  }
+
+  .input-row input,
+  .input-row select {
+    background: rgba(2,11,26,.7);
+    border: 1px solid var(--border-blue);
+    border-radius: 10px;
+    color: var(--text-primary);
+    padding: .55rem .9rem;
+    font-size: .83rem;
+    font-family: 'DM Sans', sans-serif;
+    outline: none;
+    transition: border-color .2s, box-shadow .2s;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .input-row input::placeholder { color: rgba(179,210,255,.35); }
+  .input-row input:focus,
+  .input-row select:focus {
+    border-color: var(--blue-400);
+    box-shadow: 0 0 0 3px rgba(77,147,255,.12);
+  }
+
+  .input-row select { flex: 0 0 auto; min-width: 110px; cursor: pointer; }
+  .input-row select option { background: var(--blue-900); color: var(--text-primary); }
+
+  .btn-import {
+    background: linear-gradient(135deg, var(--blue-600), var(--blue-500));
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-weight: 600;
+    font-size: .83rem;
+    padding: .55rem 1rem;
+    cursor: pointer;
+    transition: opacity .2s, transform .2s, box-shadow .2s;
+    flex-shrink: 0;
+    display: flex; align-items: center; gap: .4rem;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .btn-import:hover {
+    opacity: .9;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(26,110,245,.35);
+  }
+
+  .btn-import.teal {
+    background: linear-gradient(135deg, #0a7a70, var(--accent-teal));
+    color: #010f0e;
+  }
+
+  /* ── Chart Row ── */
+  .chart-row {
+    display: grid;
+    grid-template-columns: 5fr 7fr;
+    gap: 1.25rem;
+    margin-bottom: 2.5rem;
+    animation: fadeSlideUp .65s ease .3s both;
+  }
+
+  /* ── Activity Timeline ── */
+  .timeline-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: .85rem 0;
+    border-bottom: 1px solid var(--border-blue);
+  }
+  .timeline-item:last-child { border-bottom: none; }
+
+  .timeline-dot {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: rgba(26,110,245,.18);
+    display: flex; align-items: center; justify-content: center;
+    font-size: .9rem;
+    color: var(--blue-400);
+    flex-shrink: 0;
+  }
+
+  .timeline-name {
+    font-weight: 600;
+    font-size: .88rem;
+    color: var(--text-primary);
+    margin-bottom: .15rem;
+  }
+
+  .timeline-meta {
+    font-size: .75rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    flex-wrap: wrap;
+  }
+
+  .timeline-meta i { font-size: .75rem; }
+
+  /* ── Badges ── */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+    padding: .2rem .65rem;
+    border-radius: 999px;
+    font-size: .72rem;
+    font-weight: 600;
+    letter-spacing: .02em;
+  }
+
+  .pill-blue   { background: rgba(26,110,245,.18); color: var(--blue-300); border: 1px solid rgba(77,147,255,.2); }
+  .pill-cyan   { background: rgba(0,212,255,.15);  color: var(--accent-cyan); border: 1px solid rgba(0,212,255,.25); }
+  .pill-teal   { background: rgba(10,245,224,.12); color: var(--accent-teal); border: 1px solid rgba(10,245,224,.2); }
+  .pill-amber  { background: rgba(255,186,8,.15);  color: #ffc542; border: 1px solid rgba(255,186,8,.2); }
+  .pill-gray   { background: rgba(77,147,255,.1);  color: var(--blue-300); border: 1px solid var(--border-blue); }
+
+  /* ── Datasets Table ── */
+  .datasets-section { animation: fadeSlideUp .65s ease .4s both; }
+
+  .table-wrapper { overflow-x: auto; }
+
+  table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: .87rem;
+  }
+
+  thead tr {
+    background: rgba(10,34,64,.6);
+  }
+
+  thead th {
+    padding: .85rem 1.1rem;
+    font-family: 'Syne', sans-serif;
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--blue-300);
+    border-bottom: 1px solid var(--border-blue);
+    white-space: nowrap;
+  }
+
+  tbody tr {
+    transition: background .15s;
+  }
+
+  tbody tr:hover { background: rgba(26,110,245,.07); }
+
+  tbody td {
+    padding: .9rem 1.1rem;
+    border-bottom: 1px solid var(--border-blue);
+    color: var(--text-primary);
+    vertical-align: middle;
+  }
+
+  tbody tr:last-child td { border-bottom: none; }
+
+  .dataset-name {
+    font-weight: 600;
+    font-size: .9rem;
+  }
+
+  /* ── Action Buttons (table) ── */
+  .action-group { display: flex; gap: .4rem; }
+
+  .icon-btn {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    border: 1px solid var(--border-blue);
+    background: transparent;
+    color: var(--blue-300);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: .85rem;
+    transition: all .18s;
+    text-decoration: none;
+  }
+
+  .icon-btn:hover { background: rgba(26,110,245,.2); border-color: var(--blue-400); color: #fff; transform: scale(1.08); }
+  .icon-btn.danger:hover { background: rgba(239,68,68,.2); border-color: rgba(239,68,68,.5); color: #f87171; }
+
+  /* ── New Dataset button in header ── */
+  .btn-primary-sm {
+    background: linear-gradient(135deg, var(--blue-600), var(--blue-500));
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-weight: 600;
+    font-size: .82rem;
+    padding: .45rem 1rem;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex; align-items: center; gap: .35rem;
+    transition: opacity .2s, box-shadow .2s;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .btn-primary-sm:hover { opacity: .88; box-shadow: 0 4px 16px rgba(26,110,245,.3); color: #fff; }
+
+  /* ── Empty State ── */
+  .empty-state {
+    text-align: center;
+    padding: 3.5rem 1rem;
+  }
+
+  .empty-state i { font-size: 3rem; color: rgba(77,147,255,.3); }
+
+  .empty-state h5 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--blue-300);
+    margin: 1rem 0 .5rem;
+  }
+
+  .empty-state p { color: var(--text-secondary); font-size: .88rem; }
+
+  .empty-btns { margin-top: 1.5rem; display: flex; gap: .75rem; justify-content: center; flex-wrap: wrap; }
+
+  .btn-outline-blue {
+    background: transparent;
+    border: 1px solid var(--blue-500);
+    color: var(--blue-300);
+    border-radius: 10px;
+    padding: .55rem 1.1rem;
+    font-size: .85rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex; align-items: center; gap: .35rem;
+    transition: all .2s;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .btn-outline-blue:hover { background: rgba(26,110,245,.15); color: #fff; }
+
+  /* ── Modals ── */
+  .modal-content {
+    background: var(--blue-900) !important;
+    border: 1px solid var(--border-blue) !important;
+    border-radius: 20px !important;
+    color: var(--text-primary) !important;
+    backdrop-filter: blur(30px) !important;
+    box-shadow: 0 24px 64px rgba(0,0,0,.5) !important;
+  }
+
+  .modal-header {
+    border-bottom: 1px solid var(--border-blue) !important;
+    padding: 1.25rem 1.75rem !important;
+  }
+
+  .modal-header .modal-title {
+    font-family: 'Syne', sans-serif !important;
+    font-weight: 700 !important;
+    color: var(--blue-200) !important;
+    font-size: 1rem !important;
+  }
+
+  .modal-body {
+    padding: 1.5rem 1.75rem !important;
+    color: var(--text-secondary) !important;
+  }
+
+  .modal-body h6 {
+    font-family: 'Syne', sans-serif !important;
+    color: var(--blue-300) !important;
+    font-size: .8rem !important;
+    letter-spacing: .08em !important;
+    text-transform: uppercase !important;
+    margin-bottom: .5rem !important;
+    margin-top: 1rem !important;
+  }
+
+  .modal-body h6:first-child { margin-top: 0 !important; }
+
+  .modal-body ul { padding-left: 1.25rem; }
+  .modal-body li { margin-bottom: .3rem; font-size: .87rem; }
+
+  .modal-body .example-box {
+    background: rgba(2,11,26,.6);
+    border: 1px solid var(--border-blue);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    margin-top: .75rem;
+  }
+
+  .modal-body .example-box p {
+    font-size: .82rem;
+    margin-bottom: .4rem;
+    color: var(--text-primary);
+  }
+
+  .modal-body .example-box p:last-child { margin-bottom: 0; }
+  .modal-body .example-box strong { color: var(--blue-400); }
+
+  .btn-close {
+    filter: invert(1) !important;
+    opacity: .5 !important;
+  }
+
+  .btn-close:hover { opacity: 1 !important; }
+
+  /* ── Spinner / Processing ── */
+  .processing-pulse {
+    display: inline-flex; align-items: center; gap: .35rem;
+    font-size: .72rem; font-weight: 600; color: #ffc542;
+  }
+
+  .dot-pulse {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #ffc542;
+    animation: pulse-dot 1.2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: .4; transform: scale(.7); }
+  }
+
+  /* ── Animations ── */
+  @keyframes fadeSlideDown {
+    from { opacity: 0; transform: translateY(-18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--blue-950); }
+  ::-webkit-scrollbar-thumb { background: var(--blue-700); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--blue-500); }
+
+  /* ── Responsive ── */
+  @media (max-width: 900px) {
+    .stats-grid       { grid-template-columns: 1fr; }
+    .row-2col         { grid-template-columns: 1fr; }
+    .quick-actions-grid { grid-template-columns: repeat(2, 1fr); }
+    .import-grid      { grid-template-columns: 1fr; }
+    .chart-row        { grid-template-columns: 1fr; }
+    .dashboard-wrapper { padding: 1.25rem 1rem; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="row mb-4">
-    <div class="col-12">
-        <h2>Welcome, {{ current_user.username }}!</h2>
-        <p class="text-muted">Manage your knowledge graphs and datasets</p>
-    </div>
-</div>
+<div class="dashboard-wrapper">
 
-<!-- Stats Cards -->
-<div class="row mb-4">
-    <div class="col-md-4">
-        <div class="card text-white bg-primary stats-card">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="card-title">Total Datasets</h6>
-                        <h2 class="mb-0">{{ stats.total_datasets }}</h2>
-                    </div>
-                    <i class="bi bi-folder fs-1"></i>
-                </div>
-                <div class="mt-2">
-                    <small class="opacity-75">
-                        <i class="bi bi-diagram-3"></i> Cross-domain: {{ stats.cross_domain_datasets|default(0) }}
-                    </small>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card text-white bg-success stats-card">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="card-title">Total Entities</h6>
-                        <h2 class="mb-0">{{ stats.total_entities }}</h2>
-                    </div>
-                    <i class="bi bi-tags fs-1"></i>
-                </div>
-                <div class="mt-2">
-                    <small class="opacity-75">
-                        <i class="bi bi-arrow-left-right"></i> Avg per dataset: {{ (stats.total_entities / stats.total_datasets)|round|int if stats.total_datasets > 0 else 0 }}
-                    </small>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card text-white bg-info stats-card">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="card-title">Total Relations</h6>
-                        <h2 class="mb-0">{{ stats.total_relations }}</h2>
-                    </div>
-                    <i class="bi bi-share fs-1"></i>
-                </div>
-                <div class="mt-2">
-                    <small class="opacity-75">
-                        <i class="bi bi-globe"></i> Cross-domain: {{ stats.cross_domain_relations|default(0) }}
-                    </small>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+  <!-- ── Header ── -->
+  <div class="dashboard-header">
+    <h2>Welcome back, {{ current_user.username }} 👋</h2>
+    <p>Manage your knowledge graphs and datasets</p>
+  </div>
 
-<!-- Quick Actions -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Quick Actions</h5>
-            </div>
-            <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-md-3 col-6">
-                        <a href="{{ url_for('upload') }}" class="btn btn-outline-primary w-100 py-3">
-                            <i class="bi bi-cloud-upload fs-2 d-block mb-2"></i>
-                            <span>Single Upload</span>
-                            <small class="d-block text-muted">One domain</small>
-                        </a>
-                    </div>
-                    <div class="col-md-3 col-6">
-                        <a href="{{ url_for('upload_multi') }}" class="btn btn-outline-success w-100 py-3">
-                            <i class="bi bi-cloud-plus fs-2 d-block mb-2"></i>
-                            <span>Cross-Domain</span>
-                            <small class="d-block text-muted">Multiple domains</small>
-                        </a>
-                    </div>
-                    <div class="col-md-3 col-6">
-                        <a href="{{ url_for('search') }}" class="btn btn-outline-info w-100 py-3">
-                            <i class="bi bi-search fs-2 d-block mb-2"></i>
-                            <span>Semantic Search</span>
-                            <small class="d-block text-muted">Find connections</small>
-                        </a>
-                    </div>
-                    <div class="col-md-3 col-6">
-                        <a href="#" class="btn btn-outline-secondary w-100 py-3" data-bs-toggle="modal" data-bs-target="#helpModal">
-                            <i class="bi bi-question-circle fs-2 d-block mb-2"></i>
-                            <span>Help Guide</span>
-                            <small class="d-block text-muted">How it works</small>
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+  <!-- ── Stats ── -->
+  <div class="section-label"><i class="bi bi-bar-chart-fill"></i> Overview</div>
+  <div class="stats-grid">
 
-<!-- External Data Sources Section -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Import from External Sources</h5>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6 mb-3 mb-md-0">
-                        <div class="card h-100 border-primary">
-                            <div class="card-body">
-                                <div class="d-flex align-items-center mb-3">
-                                    <i class="bi bi-wikipedia fs-1 text-primary me-3"></i>
-                                    <h5 class="card-title mb-0">Wikipedia</h5>
-                                </div>
-                                <p class="card-text text-muted small">Search and import articles from Wikipedia to extract entities and relationships.</p>
-                                <form action="{{ url_for('import_wikipedia') }}" method="POST" class="mt-3">
-                                    <div class="input-group">
-                                        <input type="text" class="form-control" name="search_query" placeholder="Enter Wikipedia article title..." required>
-                                        <select class="form-select" name="domain" style="max-width: 120px;">
-                                            <option value="general">General</option>
-                                            <option value="science">Science</option>
-                                            <option value="history">History</option>
-                                            <option value="technology">Technology</option>
-                                        </select>
-                                        <button class="btn btn-primary" type="submit">
-                                            <i class="bi bi-search"></i> Import
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="card h-100 border-success">
-                            <div class="card-body">
-                                <div class="d-flex align-items-center mb-3">
-                                    <i class="bi bi-journal-text fs-1 text-success me-3"></i>
-                                    <h5 class="card-title mb-0">arXiv</h5>
-                                </div>
-                                <p class="card-text text-muted small">Search and import academic papers from arXiv for research-focused knowledge graphs.</p>
-                                <form action="{{ url_for('import_arxiv') }}" method="POST" class="mt-3">
-                                    <div class="input-group">
-                                        <input type="text" class="form-control" name="search_query" placeholder="Search arXiv papers..." required>
-                                        <select class="form-select" name="max_results" style="max-width: 100px;">
-                                            <option value="5">5 papers</option>
-                                            <option value="10" selected>10 papers</option>
-                                            <option value="20">20 papers</option>
-                                        </select>
-                                        <button class="btn btn-success" type="submit">
-                                            <i class="bi bi-search"></i> Search
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="stat-card blue">
+      <i class="bi bi-folder stat-bg-icon"></i>
+      <div class="stat-icon"><i class="bi bi-folder2-open"></i></div>
+      <div class="stat-value">{{ stats.total_datasets }}</div>
+      <div class="stat-label">Total Datasets</div>
+      <div class="stat-sub">
+        <i class="bi bi-diagram-3"></i> Cross-domain: {{ stats.cross_domain_datasets|default(0) }}
+      </div>
     </div>
-</div>
 
-<!-- Domain Distribution Chart -->
-<div class="row mb-4">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Domain Distribution</h5>
-            </div>
-            <div class="card-body">
-                <canvas id="domainChart" height="200"></canvas>
-            </div>
-        </div>
+    <div class="stat-card teal">
+      <i class="bi bi-tags stat-bg-icon"></i>
+      <div class="stat-icon"><i class="bi bi-tags"></i></div>
+      <div class="stat-value">{{ stats.total_entities }}</div>
+      <div class="stat-label">Total Entities</div>
+      <div class="stat-sub">
+        <i class="bi bi-arrow-left-right"></i> Avg per dataset:
+        {{ (stats.total_entities / stats.total_datasets)|round|int if stats.total_datasets > 0 else 0 }}
+      </div>
     </div>
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Recent Activity</h5>
-            </div>
-            <div class="card-body">
-                <div class="activity-timeline">
-                    {% for dataset in datasets[:5] %}
-                    <div class="d-flex align-items-center mb-3">
-                        <div class="activity-icon bg-light rounded-circle p-2 me-3">
-                            <i class="bi bi-file-text text-primary"></i>
-                        </div>
-                        <div class="flex-grow-1">
-                            <h6 class="mb-0">{{ dataset.name }}</h6>
-                            <small class="text-muted">
-                                <i class="bi bi-tag"></i> {{ dataset.domain }} | 
-                                <i class="bi bi-clock"></i> {{ dataset.uploaded_at.strftime('%Y-%m-%d %H:%M') }}
-                            </small>
-                        </div>
-                        {% if dataset.processed %}
-                        <span class="badge bg-success">Done</span>
-                        {% else %}
-                        <span class="badge bg-warning">Processing</span>
-                        {% endif %}
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- Datasets Table -->
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Your Datasets</h5>
-                <div>
-                    <span class="badge bg-primary me-2">{{ datasets|length }} Total</span>
-                    <a href="{{ url_for('upload') }}" class="btn btn-primary btn-sm">
-                        <i class="bi bi-plus"></i> New Dataset
-                    </a>
-                </div>
+    <div class="stat-card green">
+      <i class="bi bi-share stat-bg-icon"></i>
+      <div class="stat-icon"><i class="bi bi-share"></i></div>
+      <div class="stat-value">{{ stats.total_relations }}</div>
+      <div class="stat-label">Total Relations</div>
+      <div class="stat-sub">
+        <i class="bi bi-globe"></i> Cross-domain: {{ stats.cross_domain_relations|default(0) }}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Quick Actions + External Sources ── -->
+  <br class="row-2col" style="animation: fadeSlideUp .65s ease .15s both;">
+
+    <!-- Quick Actions -->
+    <div class="glass-card">
+      <div class="card-head"><h5>Quick Actions</h5></div>
+      <div class="card-body-inner">
+        <div class="quick-actions-grid">
+          <a href="{{ url_for('upload') }}" class="action-btn">
+            <i class="bi bi-cloud-upload"></i>
+            <span>Upload</span>
+            <small>One domain</small>
+          </a>
+          <a href="{{ url_for('upload_multi') }}" class="action-btn">
+            <i class="bi bi-cloud-plus"></i>
+            <span>Cross-Domain</span>
+            <small>Multi-domain</small>
+          </a>
+          <a href="{{ url_for('search') }}" class="action-btn">
+            <i class="bi bi-search"></i>
+            <span>Semantic Search</span>
+            <small>Find connections</small>
+          </a>
+          <a href="#" class="action-btn" data-bs-toggle="modal" data-bs-target="#helpModal">
+            <i class="bi bi-question-circle"></i>
+            <span>Help Guide</span>
+            <small>How it works</small>
+          </a>
+        </div>
+      </div>
+    </div>
+    <br></br>
+
+    <!-- External Sources -->
+    <div class="glass-card">
+      <div class="card-head"><h5>Import from External Sources</h5></div>
+      <div class="card-body-inner">
+        <div class="import-grid">
+
+          <div class="import-card wiki">
+            <div class="import-icon-wrap"><i class="bi bi-wikipedia"></i></div>
+            <h5>Wikipedia</h5>
+            <p>Search and import articles to extract entities and relationships.</p>
+            <form action="{{ url_for('import_wikipedia') }}" method="POST">
+              <div class="input-row">
+                <input type="text" name="search_query" placeholder="Article title…" required>
+                <select name="domain">
+                  <option value="general">General</option>
+                  <option value="science">Science</option>
+                  <option value="history">History</option>
+                  <option value="technology">Technology</option>
+                </select>
+                <button class="btn-import" type="submit"><i class="bi bi-search"></i> Import</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="import-card arxiv">
+            <div class="import-icon-wrap"><i class="bi bi-journal-text"></i></div>
+            <h5>arXiv</h5>
+            <p>Import academic papers for research-focused knowledge graphs.</p>
+            <form action="{{ url_for('import_arxiv') }}" method="POST">
+              <div class="input-row">
+                <input type="text" name="search_query" placeholder="Search papers…" required>
+                <select name="max_results">
+                  <option value="5">5</option>
+                  <option value="10" selected>10</option>
+                  <option value="20">20</option>
+                </select>
+                <button class="btn-import teal" type="submit"><i class="bi bi-search"></i> Search</button>
+              </div>
+            </form>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Chart + Activity ── -->
+  <div class="section-label"><i class="bi bi-activity"></i> Analytics</div>
+  <div class="chart-row">
+
+    <div class="glass-card">
+      <div class="card-head"><h5>Domain Distribution</h5></div>
+      <div class="card-body-inner">
+        <canvas id="domainChart" height="220"></canvas>
+      </div>
+    </div>
+
+    <div class="glass-card">
+      <div class="card-head"><h5>Recent Activity</h5></div>
+      <div class="card-body-inner">
+        {% for dataset in datasets[:5] %}
+        <div class="timeline-item">
+          <div class="timeline-dot"><i class="bi bi-file-text"></i></div>
+          <div style="flex:1; min-width:0;">
+            <div class="timeline-name">{{ dataset.name }}</div>
+            <div class="timeline-meta">
+              <span class="pill pill-blue"><i class="bi bi-tag"></i>{{ dataset.domain }}</span>
+              <span><i class="bi bi-clock"></i> {{ dataset.uploaded_at.strftime('%Y-%m-%d %H:%M') }}</span>
             </div>
-            <div class="card-body">
-                {% if datasets %}
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Domain</th>
-                                <th>Entities</th>
-                                <th>Relations</th>
-                                <th>Uploaded</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for dataset in datasets %}
-                            <tr>
-                                <td>
-                                    <strong>{{ dataset.name }}</strong>
-                                    {% if dataset.relations|selectattr('approved', 'equalto', false)|list|length > 0 %}
-                                    <span class="badge bg-warning ms-2" title="Pending approval">
-                                        <i class="bi bi-exclamation-triangle"></i>
-                                    </span>
-                                    {% endif %}
-                                </td>
-                                <td><span class="badge bg-info">{{ dataset.domain }}</span></td>
-                                <td>
-                                    <span class="badge bg-secondary">{{ dataset.entities|length }}</span>
-                                </td>
-                                <td>
-                                    <span class="badge bg-secondary">{{ dataset.relations|length }}</span>
-                                    {% set cross = dataset.relations|selectattr('relation_type', 'equalto', 'same_as')|list|length %}
-                                    {% if cross > 0 %}
-                                    <span class="badge bg-success" title="Cross-domain relations">{{ cross }}</span>
-                                    {% endif %}
-                                </td>
-                                <td>{{ dataset.uploaded_at.strftime('%Y-%m-%d %H:%M') }}</td>
-                                <td>
-                                    {% if dataset.processed %}
-                                    <span class="badge bg-success">Processed</span>
-                                    {% else %}
-                                    <span class="badge bg-warning">
-                                        <span class="spinner-border spinner-border-sm me-1" style="width:0.8rem; height:0.8rem;"></span>
-                                        Processing
-                                    </span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <div class="btn-group btn-group-sm">
-                                        {% if dataset.processed %}
-                                        <a href="{{ url_for('view_graph', dataset_id=dataset.id) }}" 
-                                           class="btn btn-outline-primary" title="View Graph">
-                                            <i class="bi bi-diagram-3"></i>
-                                        </a>
-                                        <button class="btn btn-outline-info" title="Stats" 
-                                                onclick="showStats({{ dataset.id }})">
-                                            <i class="bi bi-pie-chart"></i>
-                                        </button>
-                                        {% endif %}
-                                        <button class="btn btn-outline-danger" title="Delete"
-                                                onclick="deleteDataset({{ dataset.id }})">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+          </div>
+          {% if dataset.processed %}
+          <span class="pill pill-teal"><i class="bi bi-check2"></i> Done</span>
+          {% else %}
+          <span class="processing-pulse"><div class="dot-pulse"></div> Processing</span>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Datasets Table ── -->
+  <div class="section-label"><i class="bi bi-table"></i> Datasets</div>
+  <div class="glass-card-full datasets-section">
+    <div class="card-head">
+      <h5>Your Datasets</h5>
+      <div style="display:flex; align-items:center; gap:.75rem;">
+        <span class="pill pill-blue">{{ datasets|length }} Total</span>
+        <a href="{{ url_for('upload') }}" class="btn-primary-sm">
+          <i class="bi bi-plus"></i> New Dataset
+        </a>
+      </div>
+    </div>
+    <div class="card-body-inner" style="padding-top:0; padding-bottom:0;">
+
+      {% if datasets %}
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Domain</th>
+              <th>Entities</th>
+              <th>Relations</th>
+              <th>Uploaded</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for dataset in datasets %}
+            <tr>
+              <td>
+                <div class="dataset-name">
+                  {{ dataset.name }}
+                  {% if dataset.relations|selectattr('approved', 'equalto', false)|list|length > 0 %}
+                  <span class="pill pill-amber" style="margin-left:.4rem;" title="Pending approval">
+                    <i class="bi bi-exclamation-triangle"></i> Review
+                  </span>
+                  {% endif %}
                 </div>
-                {% else %}
-                <div class="text-center py-5">
-                    <i class="bi bi-diagram-3 fs-1 text-muted"></i>
-                    <h5 class="mt-3">No Datasets Yet</h5>
-                    <p class="text-muted">Get started by uploading your first dataset</p>
-                    <div class="mt-3">
-                        <a href="{{ url_for('upload') }}" class="btn btn-primary">
-                            <i class="bi bi-cloud-upload"></i> Single Upload
-                        </a>
-                        <a href="{{ url_for('upload_multi') }}" class="btn btn-success">
-                            <i class="bi bi-cloud-plus"></i> Cross-Domain Upload
-                        </a>
-                    </div>
-                </div>
+              </td>
+              <td><span class="pill pill-cyan">{{ dataset.domain }}</span></td>
+              <td><span class="pill pill-gray">{{ dataset.entities|length }}</span></td>
+              <td>
+                <span class="pill pill-gray">{{ dataset.relations|length }}</span>
+                {% set cross = dataset.relations|selectattr('relation_type', 'equalto', 'same_as')|list|length %}
+                {% if cross > 0 %}
+                <span class="pill pill-teal" title="Cross-domain relations" style="margin-left:.3rem;">{{ cross }} ×</span>
                 {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Help Modal -->
-<div class="modal fade" id="helpModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">How to Use Cross-Domain Knowledge Graph</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <h6>Single Upload:</h6>
-                <p>Upload one file to create a knowledge graph within a single domain.</p>
-                
-                <h6>Cross-Domain Upload:</h6>
-                <p>Upload multiple files from different domains to:</p>
-                <ul>
-                    <li>Find relationships between different domains</li>
-                    <li>Connect concepts across fields (e.g., AI + Healthcare)</li>
-                    <li>Discover hidden connections in your data</li>
-                </ul>
-                
-                <h6>Example:</h6>
-                <div class="bg-light p-3 rounded">
-                    <p><strong>File 1 (Science):</strong> "Einstein developed relativity"</p>
-                    <p><strong>File 2 (Technology):</strong> "GPS uses relativity"</p>
-                    <p><strong>Cross-Domain Relation:</strong> Einstein → GPS (theory_used_in)</p>
+              </td>
+              <td style="font-size:.8rem; color:var(--text-secondary);">{{ dataset.uploaded_at.strftime('%Y-%m-%d %H:%M') }}</td>
+              <td>
+                {% if dataset.processed %}
+                <span class="pill pill-teal"><i class="bi bi-check2-circle"></i> Processed</span>
+                {% else %}
+                <span class="processing-pulse"><div class="dot-pulse"></div> Processing</span>
+                {% endif %}
+              </td>
+              <td>
+                <div class="action-group">
+                  {% if dataset.processed %}
+                  <a href="{{ url_for('view_graph', dataset_id=dataset.id) }}" class="icon-btn" title="View Graph">
+                    <i class="bi bi-diagram-3"></i>
+                  </a>
+                  <button class="icon-btn" title="Stats" onclick="showStats({{ dataset.id }})">
+                    <i class="bi bi-pie-chart"></i>
+                  </button>
+                  {% endif %}
+                  <button class="icon-btn danger" title="Delete" onclick="deleteDataset({{ dataset.id }})">
+                    <i class="bi bi-trash"></i>
+                  </button>
                 </div>
-            </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% else %}
+      <div class="empty-state">
+        <i class="bi bi-diagram-3"></i>
+        <h5>No Datasets Yet</h5>
+        <p>Get started by uploading your first dataset</p>
+        <div class="empty-btns">
+          <a href="{{ url_for('upload') }}" class="btn-primary-sm">
+            <i class="bi bi-cloud-upload"></i> Single Upload
+          </a>
+          <a href="{{ url_for('upload_multi') }}" class="btn-outline-blue">
+            <i class="bi bi-cloud-plus"></i> Cross-Domain Upload
+          </a>
         </div>
+      </div>
+      {% endif %}
+
     </div>
+  </div>
+
+</div><!-- /dashboard-wrapper -->
+
+<!-- ── Help Modal ── -->
+<div class="modal fade" id="helpModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">How to Use Cross-Domain Knowledge Graph</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <h6>Single Upload</h6>
+        <p>Upload one file to create a knowledge graph within a single domain.</p>
+        <h6>Cross-Domain Upload</h6>
+        <p>Upload multiple files from different domains to:</p>
+        <ul>
+          <li>Find relationships between different domains</li>
+          <li>Connect concepts across fields (e.g., AI + Healthcare)</li>
+          <li>Discover hidden connections in your data</li>
+        </ul>
+        <h6>Example</h6>
+        <div class="example-box">
+          <p><strong>File 1 (Science):</strong> "Einstein developed relativity"</p>
+          <p><strong>File 2 (Technology):</strong> "GPS uses relativity"</p>
+          <p><strong>Cross-Domain:</strong> Einstein → GPS (theory_used_in)</p>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
-<!-- Stats Modal -->
+<!-- ── Stats Modal ── -->
 <div class="modal fade" id="statsModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Dataset Statistics</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="statsContent">
-                Loading...
-            </div>
-        </div>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Dataset Statistics</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="statsContent">Loading…</div>
     </div>
+  </div>
 </div>
+
 {% endblock %}
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-// Domain Distribution Chart
-document.addEventListener('DOMContentLoaded', function() {
-    const domains = {};
-    {% for dataset in datasets %}
-        domains['{{ dataset.domain }}'] = (domains['{{ dataset.domain }}'] || 0) + 1;
-    {% endfor %}
-    
-    const ctx = document.getElementById('domainChart').getContext('2d');
-    new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: Object.keys(domains),
-            datasets: [{
-                data: Object.values(domains),
-                backgroundColor: [
-                    '#4361ee', '#4cc9f0', '#f72585', '#f8961e', 
-                    '#43aa8b', '#577590', '#7209b7', '#e9c46a'
-                ]
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    position: 'bottom'
-                }
-            }
+document.addEventListener('DOMContentLoaded', function () {
+  const domains = {};
+  {% for dataset in datasets %}
+    domains['{{ dataset.domain }}'] = (domains['{{ dataset.domain }}'] || 0) + 1;
+  {% endfor %}
+
+  const ctx = document.getElementById('domainChart').getContext('2d');
+
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(domains),
+      datasets: [{
+        data: Object.values(domains),
+        backgroundColor: [
+          '#1a6ef5','#00d4ff','#0af5e0','#4d93ff',
+          '#0a4fb5','#80b4ff','#055db0','#b3d2ff'
+        ],
+        borderColor: 'rgba(2,11,26,.6)',
+        borderWidth: 2,
+        hoverOffset: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      cutout: '68%',
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            color: '#80b4ff',
+            font: { family: "'DM Sans', sans-serif", size: 12 },
+            boxWidth: 10,
+            padding: 14
+          }
         }
-    });
+      }
+    }
+  });
 });
 
-// Show dataset statistics
 function showStats(datasetId) {
-    fetch(`/api/dataset_stats/${datasetId}`)
-        .then(response => response.json())
-        .then(data => {
-            let html = `
-                <h6>Entity Types:</h6>
-                <ul class="list-unstyled">
-            `;
-            
-            for (const [type, count] of Object.entries(data.entity_types)) {
-                html += `<li><span class="badge bg-info me-2">${type}</span> ${count}</li>`;
-            }
-            
-            html += `
-                </ul>
-                <h6>Relation Types:</h6>
-                <ul class="list-unstyled">
-            `;
-            
-            for (const [type, count] of Object.entries(data.relation_types)) {
-                html += `<li><span class="badge bg-success me-2">${type}</span> ${count}</li>`;
-            }
-            
-            html += `</ul>`;
-            
-            document.getElementById('statsContent').innerHTML = html;
-            new bootstrap.Modal(document.getElementById('statsModal')).show();
-        });
+  fetch(`/api/dataset_stats/${datasetId}`)
+    .then(r => r.json())
+    .then(data => {
+      let html = '<h6>Entity Types</h6><div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:1rem;">';
+      for (const [type, count] of Object.entries(data.entity_types)) {
+        html += `<span class="pill pill-cyan">${type} <strong>${count}</strong></span>`;
+      }
+      html += '</div><h6>Relation Types</h6><div style="display:flex;flex-wrap:wrap;gap:.4rem;">';
+      for (const [type, count] of Object.entries(data.relation_types)) {
+        html += `<span class="pill pill-teal">${type} <strong>${count}</strong></span>`;
+      }
+      html += '</div>';
+      document.getElementById('statsContent').innerHTML = html;
+      new bootstrap.Modal(document.getElementById('statsModal')).show();
+    });
 }
 
-// Delete dataset
 function deleteDataset(datasetId) {
-    if (confirm('Are you sure you want to delete this dataset?')) {
-        fetch(`/api/dataset/${datasetId}`, {
-            method: 'DELETE',
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert('Error deleting dataset');
-            }
-        });
-    }
+  if (confirm('Are you sure you want to delete this dataset?')) {
+    fetch(`/api/dataset/${datasetId}`, { method: 'DELETE' })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) location.reload();
+        else alert('Error deleting dataset');
+      });
+  }
 }
 
-// Auto-refresh for processing status
-setInterval(function() {
-    const processingBadges = document.querySelectorAll('.badge.bg-warning');
-    if (processingBadges.length > 0) {
-        location.reload();
-    }
-}, 5000); // Refresh every 5 seconds if any dataset is processing
+setInterval(function () {
+  if (document.querySelectorAll('.processing-pulse').length > 0) location.reload();
+}, 5000);
 </script>
 {% endblock %}
