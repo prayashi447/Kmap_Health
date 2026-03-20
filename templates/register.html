@@ -1,591 +1,648 @@
-{% extends "base.html" %}
-
-{% block title %}Register{% endblock %}
+{% block title %}{% endblock %}
 
 {% block extra_css %}
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
 
     :root {
-        --grad-a: #6a5af9;
-        --grad-b: #d66efd;
-        --grad-c: #4facfe;
-        --primary-gradient: linear-gradient(135deg, var(--grad-a) 0%, var(--grad-b) 100%);
-        --mesh-gradient:
-            radial-gradient(at 20% 20%, hsla(252, 94%, 67%, 0.55) 0px, transparent 55%),
-            radial-gradient(at 85% 10%, hsla(291, 96%, 72%, 0.45) 0px, transparent 50%),
-            radial-gradient(at 70% 80%, hsla(206, 98%, 65%, 0.4) 0px, transparent 55%),
-            radial-gradient(at 10% 85%, hsla(252, 60%, 40%, 0.3) 0px, transparent 50%);
-        --shadow-card: 0 32px 80px rgba(106, 90, 249, 0.2), 0 8px 24px rgba(0,0,0,0.12);
-        --shadow-hover: 0 48px 100px rgba(106, 90, 249, 0.3), 0 16px 40px rgba(0,0,0,0.18);
-        --glass-bg: rgba(255, 255, 255, 0.72);
-        --glass-border: rgba(255, 255, 255, 0.9);
-        --input-border: rgba(106, 90, 249, 0.18);
-        --text-primary: #1a1230;
-        --text-muted: #7b7192;
+        --blue-deep:    #0a2540;
+        --blue-mid:     #1a5fa8;
+        --blue-bright:  #2d8cff;
+        --blue-soft:    #5ba8ff;
+        --blue-pale:    #dceeff;
+        --blue-frost:   #f0f7ff;
+        --white:        #ffffff;
+        --text-dark:    #0a2540;
+        --text-mid:     #3d607e;
+        --text-light:   #7a9ab5;
+        --border:       rgba(45, 140, 255, 0.15);
+        --border-focus: rgba(45, 140, 255, 0.5);
+        --shadow-blue:  0 20px 60px rgba(10, 37, 64, 0.18), 0 4px 16px rgba(26, 95, 168, 0.12);
     }
 
-    *, *::before, *::after { box-sizing: border-box; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-        font-family: 'Sora', sans-serif;
-        background: #0f0b1e;
+        font-family: 'DM Sans', sans-serif;
         min-height: 100vh;
         display: flex;
         align-items: center;
         justify-content: center;
+        background: #0a2540;
         position: relative;
         overflow: hidden;
+        padding: 24px 16px;
     }
 
+    /* ── Background image layer ── */
     body::before {
         content: '';
         position: fixed;
         inset: 0;
-        background: var(--mesh-gradient);
-        background-color: #130d2a;
+        background-image: url("{{ url_for('static', filename='img/Background2.webp') }}");
+        background-size: cover;
+        background-position: center;
         z-index: 0;
+        opacity: 0.35;
     }
 
+    /* Mesh gradient overlay */
     body::after {
         content: '';
         position: fixed;
         inset: 0;
-        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
-        opacity: 0.6;
-        z-index: 0;
-        pointer-events: none;
+        background:
+            radial-gradient(ellipse 80% 60% at 10% 20%, rgba(26, 95, 168, 0.55) 0%, transparent 60%),
+            radial-gradient(ellipse 60% 70% at 90% 80%, rgba(45, 140, 255, 0.3) 0%, transparent 55%),
+            radial-gradient(ellipse 50% 50% at 50% 50%, rgba(10, 37, 64, 0.7) 0%, transparent 100%);
+        z-index: 1;
     }
 
-    /* ── Floating orbs ── */
-    .floating-shapes { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
-
-    .shape {
-        position: absolute;
-        border-radius: 50%;
-        filter: blur(60px);
-        animation: drift linear infinite;
-        opacity: 0.5;
-    }
-
-    .shape-1 {
-        width: 420px; height: 420px;
-        background: radial-gradient(circle, rgba(106,90,249,0.6) 0%, transparent 70%);
-        top: -180px; left: -100px;
-        animation-duration: 25s;
-        animation-delay: 0s;
-    }
-
-    .shape-2 {
-        width: 300px; height: 300px;
-        background: radial-gradient(circle, rgba(214,110,253,0.5) 0%, transparent 70%);
-        bottom: -120px; right: -80px;
-        animation-duration: 30s;
-        animation-delay: -8s;
-    }
-
-    .shape-3 {
-        width: 200px; height: 200px;
-        background: radial-gradient(circle, rgba(79,172,254,0.5) 0%, transparent 70%);
-        top: 60px; right: 80px;
-        animation-duration: 20s;
-        animation-delay: -15s;
-    }
-
-    .shape-4 {
-        width: 160px; height: 160px;
-        background: radial-gradient(circle, rgba(255,182,100,0.35) 0%, transparent 70%);
-        bottom: 30%; right: 5%;
-        animation-duration: 35s;
-        animation-delay: -5s;
-    }
-
-    @keyframes drift {
-        0%, 100% { transform: translate(0, 0) scale(1); }
-        25%       { transform: translate(20px, -30px) scale(1.05); }
-        50%       { transform: translate(-15px, 20px) scale(0.95); }
-        75%       { transform: translate(10px, 30px) scale(1.03); }
-    }
-
-    /* Grid lines */
-    .grid-bg {
+    /* Animated grid */
+    .grid-overlay {
         position: fixed;
         inset: 0;
-        z-index: 1;
+        z-index: 2;
         pointer-events: none;
         background-image:
-            linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
-        background-size: 48px 48px;
-        mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, black, transparent);
+            linear-gradient(rgba(45, 140, 255, 0.04) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(45, 140, 255, 0.04) 1px, transparent 1px);
+        background-size: 56px 56px;
     }
 
-    /* ── Card ── */
-    .card {
-        border: 1px solid var(--glass-border);
-        border-radius: 28px;
-        overflow: hidden;
-        background: var(--glass-bg);
-        backdrop-filter: blur(28px) saturate(180%);
-        -webkit-backdrop-filter: blur(28px) saturate(180%);
-        box-shadow: var(--shadow-card);
-        transition: transform 0.4s cubic-bezier(.22,1,.36,1), box-shadow 0.4s ease;
-        animation: cardReveal 0.7s cubic-bezier(.22,1,.36,1) both;
-        position: relative;
-    }
-
-    .card:hover {
-        transform: translateY(-6px) scale(1.005);
-        box-shadow: var(--shadow-hover);
-    }
-
-    /* Prismatic top border */
-    .card::before {
-        content: '';
-        position: absolute;
-        top: 0; left: 0; right: 0;
-        height: 3px;
-        background: linear-gradient(90deg, var(--grad-a), var(--grad-b), var(--grad-c), var(--grad-a));
-        background-size: 200% 100%;
-        animation: shimmerBorder 4s linear infinite;
-        z-index: 3;
-        border-radius: 28px 28px 0 0;
-    }
-
-    /* Inner gloss */
-    .card::after {
-        content: '';
-        position: absolute;
-        inset: 0;
-        border-radius: 28px;
-        background: linear-gradient(160deg, rgba(255,255,255,0.5) 0%, transparent 40%);
+    /* Floating orbs */
+    .orb {
+        position: fixed;
+        border-radius: 50%;
         pointer-events: none;
-        z-index: 0;
+        z-index: 2;
+        animation: orbFloat ease-in-out infinite;
+    }
+    .orb-1 {
+        width: 500px; height: 500px;
+        background: radial-gradient(circle, rgba(45,140,255,0.18) 0%, transparent 65%);
+        top: -200px; right: -150px;
+        animation-duration: 18s; animation-delay: 0s;
+    }
+    .orb-2 {
+        width: 380px; height: 380px;
+        background: radial-gradient(circle, rgba(26,95,168,0.22) 0%, transparent 65%);
+        bottom: -150px; left: -100px;
+        animation-duration: 22s; animation-delay: -7s;
+    }
+    .orb-3 {
+        width: 200px; height: 200px;
+        background: radial-gradient(circle, rgba(91,168,255,0.15) 0%, transparent 65%);
+        top: 45%; right: 8%;
+        animation-duration: 14s; animation-delay: -4s;
     }
 
-    @keyframes shimmerBorder {
+    @keyframes orbFloat {
+        0%, 100% { transform: translate(0, 0); }
+        33%       { transform: translate(15px, -25px); }
+        66%       { transform: translate(-10px, 15px); }
+    }
+
+    /* ── Card wrapper ── */
+    .register-wrapper {
+        position: relative;
+        z-index: 10;
+        width: 100%;
+        max-width: 460px;
+        animation: wrapperReveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    @keyframes wrapperReveal {
+        from { opacity: 0; transform: translateY(32px) scale(0.96); }
+        to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* ── Glass card ── */
+    .register-card {
+        background: rgba(255, 255, 255, 0.96);
+        border-radius: 24px;
+        border: 1px solid rgba(255, 255, 255, 0.9);
+        box-shadow:
+            0 32px 80px rgba(10, 37, 64, 0.35),
+            0 8px 24px rgba(10, 37, 64, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 1);
+        overflow: hidden;
+    }
+
+    /* Gradient accent bar */
+    .card-accent {
+        height: 4px;
+        background: linear-gradient(90deg, var(--blue-deep) 0%, var(--blue-mid) 40%, var(--blue-bright) 70%, var(--blue-soft) 100%);
+        background-size: 200% 100%;
+        animation: accentShimmer 3s linear infinite;
+    }
+
+    @keyframes accentShimmer {
         0%   { background-position: 0% 0%; }
         100% { background-position: 200% 0%; }
     }
 
-    @keyframes cardReveal {
-        from { opacity: 0; transform: translateY(28px) scale(0.97); }
-        to   { opacity: 1; transform: translateY(0) scale(1); }
+    .card-inner {
+        padding: 36px 40px 32px;
     }
 
-    .card-body {
-        position: relative;
-        z-index: 2;
-        padding: 2.6rem !important;
+    /* ── Brand area ── */
+    .brand-area {
+        text-align: center;
+        margin-bottom: 24px;
     }
 
-    /* ── Logo icon ── */
-    .bi-diagram-3 {
-        font-size: 2.6rem;
-        background: var(--primary-gradient);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        display: block;
-        filter: drop-shadow(0 4px 12px rgba(106, 90, 249, 0.5));
-        animation: iconPulse 3s ease-in-out infinite;
-    }
-
-    @keyframes iconPulse {
-        0%, 100% { filter: drop-shadow(0 4px 12px rgba(106,90,249,0.4)); }
-        50%       { filter: drop-shadow(0 4px 24px rgba(214,110,253,0.7)); }
-    }
-
-    /* ── Headings ── */
-    h2 {
-        font-family: 'Instrument Serif', Georgia, serif;
-        font-style: italic;
-        font-weight: 400;
-        font-size: 2rem;
-        letter-spacing: -0.01em;
-        background: var(--primary-gradient);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        margin-bottom: 0.25rem;
-        line-height: 1.15;
-    }
-
-    h4 {
-        color: var(--text-muted);
-        font-weight: 400;
-        font-size: 0.78rem;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        position: relative;
-        display: inline-block;
-        padding-bottom: 14px;
-        margin-bottom: 0 !important;
-    }
-
-    h4::after {
-        content: '';
-        position: absolute;
-        bottom: 0;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 36px;
-        height: 2px;
-        background: var(--primary-gradient);
-        border-radius: 4px;
-    }
-
-    /* ── Step indicator ── */
-    .step-indicator {
+    .logo-ring {
+        width: 64px;
+        height: 64px;
+        border-radius: 18px;
+        background: var(--blue-frost);
+        border: 1.5px solid var(--blue-pale);
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 6px;
-        margin: 1.4rem 0 1.6rem;
+        margin: 0 auto 16px;
+        box-shadow: 0 8px 24px rgba(45, 140, 255, 0.15);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
 
-    .step-dot {
-        width: 7px; height: 7px;
-        border-radius: 50%;
-        background: rgba(106,90,249,0.2);
-        transition: all 0.3s ease;
+    .logo-ring:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 32px rgba(45, 140, 255, 0.25);
     }
 
-    .step-dot.active {
-        width: 22px;
-        border-radius: 4px;
-        background: var(--primary-gradient);
-        box-shadow: 0 0 8px rgba(106,90,249,0.5);
+    .logo-ring img {
+        width: 40px;
+        height: 40px;
+        object-fit: contain;
     }
 
-    /* ── Form labels ── */
-    .form-label {
+    .brand-title {
+        font-family: 'DM Serif Display', Georgia, serif;
+        font-style: italic;
+        font-size: 1.8rem;
+        color: var(--blue-deep);
+        letter-spacing: -0.02em;
+        line-height: 1;
+        margin-bottom: 4px;
+    }
+
+    .brand-subtitle {
+        font-size: 0.75rem;
         font-weight: 500;
-        color: var(--text-primary);
-        margin-bottom: 0.45rem;
-        font-size: 0.76rem;
+        color: var(--text-light);
+        letter-spacing: 0.14em;
         text-transform: uppercase;
-        letter-spacing: 0.08em;
-        opacity: 0.75;
-    }
-
-    /* ── Input group ── */
-    .input-group {
-        border-radius: 14px;
-        box-shadow: 0 2px 8px rgba(106,90,249,0.06);
-        transition: box-shadow 0.3s ease;
-    }
-
-    .input-group:focus-within {
-        box-shadow: 0 0 0 3px rgba(106,90,249,0.15), 0 4px 16px rgba(106,90,249,0.1);
-    }
-
-    .input-group-text {
-        background: rgba(106,90,249,0.06);
-        border: 1.5px solid var(--input-border);
-        border-right: none;
-        border-radius: 14px 0 0 14px;
-        color: var(--grad-a);
-        padding: 0 14px;
-        transition: all 0.3s ease;
-    }
-
-    .input-group:focus-within .input-group-text {
-        background: rgba(106,90,249,0.1);
-        border-color: rgba(106,90,249,0.4);
-        color: var(--grad-b);
-    }
-
-    .form-control {
-        border: 1.5px solid var(--input-border);
-        border-left: none;
-        border-radius: 0 14px 14px 0;
-        padding: 12px 16px;
-        font-size: 0.93rem;
-        font-family: 'Sora', sans-serif;
-        color: var(--text-primary);
-        background: rgba(255,255,255,0.6);
-        transition: all 0.3s ease;
-        backdrop-filter: blur(4px);
-    }
-
-    .form-control::placeholder { color: #c0bdd8; font-size: 0.88rem; }
-
-    .form-control:focus {
-        border-color: rgba(106,90,249,0.4);
-        box-shadow: none;
-        outline: none;
-        background: rgba(255,255,255,0.85);
-    }
-
-    /* ── Password strength bar ── */
-    .strength-bar-wrap {
-        height: 3px;
-        background: rgba(106,90,249,0.1);
-        border-radius: 4px;
-        margin-top: 8px;
-        overflow: hidden;
-    }
-
-    .strength-bar {
-        height: 100%;
-        width: 0%;
-        border-radius: 4px;
-        background: var(--primary-gradient);
-        transition: width 0.4s ease, background 0.4s ease;
-    }
-
-    /* ── Primary button ── */
-    .btn-primary {
-        background: var(--primary-gradient);
-        border: none;
-        border-radius: 14px;
-        padding: 14px 24px;
-        font-family: 'Sora', sans-serif;
-        font-weight: 600;
-        font-size: 0.86rem;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-        transition: all 0.35s cubic-bezier(.22,1,.36,1);
-        position: relative;
-        overflow: hidden;
-        box-shadow: 0 6px 20px rgba(106,90,249,0.35);
-    }
-
-    .btn-primary::before {
-        content: '';
-        position: absolute;
-        top: 0; left: -120%;
-        width: 80%; height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
-        transform: skewX(-20deg);
-        transition: left 0.6s ease;
-    }
-
-    .btn-primary:hover {
-        transform: translateY(-2px) scale(1.01);
-        box-shadow: 0 12px 32px rgba(106,90,249,0.45);
-    }
-
-    .btn-primary:hover::before { left: 140%; }
-
-    .btn-primary:active {
-        transform: translateY(0) scale(0.99);
-        box-shadow: 0 4px 12px rgba(106,90,249,0.3);
-    }
-
-    /* ── Outline button ── */
-    .btn-outline-primary {
-        border: 1.5px solid rgba(106,90,249,0.35);
-        border-radius: 14px;
-        color: var(--grad-a);
-        font-family: 'Sora', sans-serif;
-        font-weight: 500;
-        font-size: 0.86rem;
-        letter-spacing: 0.06em;
-        background: rgba(106,90,249,0.04);
-        transition: all 0.3s ease;
-        padding: 12px 24px;
-    }
-
-    .btn-outline-primary:hover {
-        background: rgba(106,90,249,0.1);
-        border-color: rgba(106,90,249,0.6);
-        color: var(--grad-a);
-        transform: translateY(-1px);
-        box-shadow: 0 6px 18px rgba(106,90,249,0.15);
     }
 
     /* ── Divider ── */
-    .auth-divider {
+    .divider {
         display: flex;
         align-items: center;
-        gap: 10px;
-        margin: 1.4rem 0 1.2rem;
+        gap: 12px;
+        margin-bottom: 24px;
     }
-
-    .auth-divider span {
+    .divider-line {
         flex: 1;
         height: 1px;
-        background: linear-gradient(90deg, transparent, rgba(106,90,249,0.2), transparent);
+        background: linear-gradient(90deg, transparent, rgba(45,140,255,0.15), transparent);
+    }
+    .divider-dot {
+        width: 4px; height: 4px;
+        background: var(--blue-bright);
+        border-radius: 50%;
+        opacity: 0.4;
     }
 
-    .auth-divider small {
-        font-size: 0.68rem;
-        letter-spacing: 0.12em;
+    /* ── Two-column grid for name fields ── */
+    .field-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+    }
+
+    /* ── Form fields ── */
+    .field-group {
+        margin-bottom: 16px;
+    }
+
+    .field-label {
+        display: block;
+        font-size: 0.71rem;
+        font-weight: 600;
+        letter-spacing: 0.1em;
         text-transform: uppercase;
-        color: var(--text-muted);
+        color: var(--text-mid);
+        margin-bottom: 7px;
     }
 
-    /* ── Text & links ── */
-    .text-muted { color: var(--text-muted) !important; font-size: 0.83rem; }
-
-    .text-center a {
-        color: var(--grad-a);
-        text-decoration: none;
-        font-weight: 500;
-        transition: all 0.3s ease;
+    .field-wrap {
         position: relative;
+        display: flex;
+        align-items: center;
     }
 
-    .text-center a::after {
+    .field-icon {
+        position: absolute;
+        left: 13px;
+        width: 15px;
+        height: 15px;
+        color: var(--text-light);
+        pointer-events: none;
+        transition: color 0.2s ease;
+        z-index: 1;
+        flex-shrink: 0;
+    }
+
+    .field-input {
+        width: 100%;
+        padding: 12px 14px 12px 40px;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 0.91rem;
+        font-weight: 400;
+        color: var(--text-dark);
+        background: var(--blue-frost);
+        border: 1.5px solid var(--border);
+        border-radius: 12px;
+        outline: none;
+        transition: all 0.25s ease;
+        -webkit-appearance: none;
+    }
+
+    .field-input::placeholder {
+        color: var(--text-light);
+        font-weight: 300;
+    }
+
+    .field-input:hover {
+        border-color: rgba(45, 140, 255, 0.3);
+        background: #f5f9ff;
+    }
+
+    .field-input:focus {
+        border-color: var(--blue-bright);
+        background: var(--white);
+        box-shadow: 0 0 0 4px rgba(45, 140, 255, 0.1);
+    }
+
+    .field-wrap:focus-within .field-icon {
+        color: var(--blue-bright);
+    }
+
+    /* ── Password strength ── */
+    .strength-wrap {
+        margin-top: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .strength-track {
+        flex: 1;
+        height: 4px;
+        background: rgba(45, 140, 255, 0.1);
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .strength-fill {
+        height: 100%;
+        width: 0%;
+        border-radius: 4px;
+        transition: width 0.35s ease, background 0.35s ease;
+        background: linear-gradient(90deg, #f87171, #fb923c);
+    }
+
+    .strength-label {
+        font-size: 0.7rem;
+        font-weight: 500;
+        color: var(--text-light);
+        min-width: 32px;
+        text-align: right;
+        transition: color 0.3s ease;
+    }
+
+    /* ── Role select ── */
+    .field-select {
+        width: 100%;
+        padding: 12px 14px 12px 40px;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 0.91rem;
+        font-weight: 400;
+        color: var(--text-dark);
+        background: var(--blue-frost);
+        border: 1.5px solid var(--border);
+        border-radius: 12px;
+        outline: none;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        -webkit-appearance: none;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a9ab5' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 14px center;
+        background-color: var(--blue-frost);
+    }
+
+    .field-select:hover { border-color: rgba(45, 140, 255, 0.3); background-color: #f5f9ff; }
+    .field-select:focus {
+        border-color: var(--blue-bright);
+        background-color: var(--white);
+        box-shadow: 0 0 0 4px rgba(45, 140, 255, 0.1);
+    }
+
+    /* ── Submit button ── */
+    .btn-register {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        padding: 14px 24px;
+        margin-top: 20px;
+        margin-bottom: 14px;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 0.88rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--white);
+        background: linear-gradient(135deg, var(--blue-deep) 0%, var(--blue-mid) 60%, var(--blue-bright) 100%);
+        background-size: 200% 100%;
+        background-position: 100% 0;
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.4s cubic-bezier(.22,1,.36,1);
+        box-shadow: 0 6px 20px rgba(26, 95, 168, 0.4), inset 0 1px 0 rgba(255,255,255,0.15);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn-register::before {
         content: '';
         position: absolute;
-        bottom: -2px; left: 0;
-        width: 0; height: 1.5px;
-        background: var(--primary-gradient);
-        transition: width 0.3s ease;
+        inset: 0;
+        background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.12) 50%, transparent 100%);
+        transform: translateX(-100%);
+        transition: transform 0.5s ease;
     }
 
-    .text-center a:hover { color: var(--grad-b); }
-    .text-center a:hover::after { width: 100%; }
-
-    /* ── Staggered field reveal ── */
-    .mb-3:nth-child(1) { animation: fieldReveal 0.5s 0.3s both; }
-    .mb-3:nth-child(2) { animation: fieldReveal 0.5s 0.42s both; }
-    .mb-3:nth-child(3) { animation: fieldReveal 0.5s 0.54s both; }
-    .btn-primary       { animation: fieldReveal 0.5s 0.66s both; }
-
-    @keyframes fieldReveal {
-        from { opacity: 0; transform: translateX(-12px); }
-        to   { opacity: 1; transform: translateX(0); }
+    .btn-register:hover {
+        background-position: 0% 0;
+        box-shadow: 0 10px 32px rgba(26, 95, 168, 0.55), inset 0 1px 0 rgba(255,255,255,0.2);
+        transform: translateY(-2px);
     }
 
-    /* ── Terms hint ── */
+    .btn-register:hover::before { transform: translateX(100%); }
+
+    .btn-register:active {
+        transform: translateY(0);
+        box-shadow: 0 4px 12px rgba(26, 95, 168, 0.35);
+    }
+
+    /* ── Terms note ── */
     .terms-note {
-        font-size: 0.72rem;
-        color: var(--text-muted);
         text-align: center;
-        margin-top: 0.8rem;
+        font-size: 0.75rem;
+        color: var(--text-light);
         line-height: 1.5;
-        opacity: 0.8;
     }
 
     .terms-note a {
-        color: var(--grad-a);
-        text-decoration: underline;
-        text-underline-offset: 2px;
+        color: var(--blue-mid);
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.2s ease;
     }
 
-    /* Responsive */
-    @media (max-width: 768px) {
-        .card-body { padding: 2rem !important; }
-        h2 { font-size: 1.7rem; }
-        .bi-diagram-3 { font-size: 2.2rem; }
+    .terms-note a:hover { color: var(--blue-bright); }
+
+    /* ── Bottom divider ── */
+    .bottom-divider {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 20px 0 16px;
+    }
+    .bottom-divider-line {
+        flex: 1;
+        height: 1px;
+        background: rgba(45, 140, 255, 0.1);
+    }
+    .bottom-divider span {
+        font-size: 0.72rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--text-light);
+        font-weight: 500;
+    }
+
+    /* ── Sign-in button ── */
+    .btn-signin {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        padding: 12px 24px;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 0.86rem;
+        font-weight: 500;
+        color: var(--blue-mid);
+        background: transparent;
+        border: 1.5px solid rgba(26, 95, 168, 0.25);
+        border-radius: 12px;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        letter-spacing: 0.02em;
+    }
+
+    .btn-signin:hover {
+        background: var(--blue-frost);
+        border-color: rgba(26, 95, 168, 0.45);
+        color: var(--blue-deep);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 16px rgba(45, 140, 255, 0.12);
+    }
+
+    /* ── Staggered field animation ── */
+    .field-group:nth-child(1) { animation: fieldSlide 0.5s 0.2s both; }
+    .field-group:nth-child(2) { animation: fieldSlide 0.5s 0.3s both; }
+    .field-group:nth-child(3) { animation: fieldSlide 0.5s 0.38s both; }
+    .field-group:nth-child(4) { animation: fieldSlide 0.5s 0.46s both; }
+    .field-row               { animation: fieldSlide 0.5s 0.54s both; }
+
+    @keyframes fieldSlide {
+        from { opacity: 0; transform: translateX(-10px); }
+        to   { opacity: 1; transform: translateX(0); }
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 480px) {
+        .card-inner { padding: 28px 20px 24px; }
+        .field-row { grid-template-columns: 1fr; }
+        .brand-title { font-size: 1.6rem; }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="floating-shapes">
-    <div class="shape shape-1"></div>
-    <div class="shape shape-2"></div>
-    <div class="shape shape-3"></div>
-    <div class="shape shape-4"></div>
-</div>
-<div class="grid-bg"></div>
+<div class="grid-overlay"></div>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
 
-<div class="row justify-content-center w-100" style="position:relative;z-index:10;">
-    <div class="col-md-6 col-lg-4">
-        <div class="card shadow-lg">
-            <div class="card-body p-5">
+<div class="register-wrapper">
+    <div class="register-card">
+        <div class="card-accent"></div>
+        <div class="card-inner">
 
-                <!-- Logo + title -->
-                <div class="text-center mb-1">
-                    <i class="bi bi-diagram-3"></i>
-                    <h2 class="text-center mt-2 mb-1">KMap-Health</h2>
-                    <h4>Create your account</h4>
+            <!-- Brand -->
+            <div class="brand-area">
+                <div class="logo-ring">
+                    <img src="{{ url_for('static', filename='img/infosys logo.avif') }}"
+                         alt="KMap-Health"
+                         onerror="this.style.display='none'">
                 </div>
-
-                <!-- Step indicator dots -->
-                <div class="step-indicator">
-                    <div class="step-dot active"></div>
-                    <div class="step-dot"></div>
-                    <div class="step-dot"></div>
-                </div>
-
-                <form method="POST" action="{{ url_for('register') }}">
-                    <div class="mb-3">
-                        <label for="username" class="form-label">Username</label>
-                        <div class="input-group">
-                            <span class="input-group-text">
-                                <i class="bi bi-person"></i>
-                            </span>
-                            <input type="text" class="form-control" id="username" name="username"
-                                   placeholder="Choose a username" required>
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="email" class="form-label">Email Address</label>
-                        <div class="input-group">
-                            <span class="input-group-text">
-                                <i class="bi bi-envelope"></i>
-                            </span>
-                            <input type="email" class="form-control" id="email" name="email"
-                                   placeholder="you@example.com" required>
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="password" class="form-label">Password</label>
-                        <div class="input-group">
-                            <span class="input-group-text">
-                                <i class="bi bi-lock"></i>
-                            </span>
-                            <input type="password" class="form-control" id="password" name="password"
-                                   placeholder="Create a strong password" required
-                                   oninput="updateStrength(this.value)">
-                        </div>
-                        <!-- Password strength bar -->
-                        <div class="strength-bar-wrap">
-                            <div class="strength-bar" id="strengthBar"></div>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary w-100 mb-2 mt-1">
-                        <i class="bi bi-person-check me-2"></i>Create Account
-                    </button>
-
-                    <p class="terms-note">
-                        By registering you agree to our
-                        <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>
-                    </p>
-                </form>
-
-                <!-- Divider -->
-                <div class="auth-divider">
-                    <span></span><small>or</small><span></span>
-                </div>
-
-                <div class="text-center">
-                    <p class="text-muted mb-2">Already have an account?</p>
-                    <a href="{{ url_for('login') }}" class="btn btn-outline-primary w-100">
-                        <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
-                    </a>
-                </div>
-
+                <div class="brand-title">KMap-Health</div>
+                <div class="brand-subtitle">Create your account</div>
             </div>
+
+            <div class="divider">
+                <div class="divider-line"></div>
+                <div class="divider-dot"></div>
+                <div class="divider-line"></div>
+            </div>
+
+            <!-- Form -->
+            <form method="POST" action="{{ url_for('register') }}">
+
+                <!-- Username -->
+                <div class="field-group">
+                    <label class="field-label" for="username">Username</label>
+                    <div class="field-wrap">
+                        <svg class="field-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <circle cx="10" cy="7" r="3"/>
+                            <path d="M4 17c0-3.3 2.7-6 6-6s6 2.7 6 6"/>
+                        </svg>
+                        <input type="text" class="field-input" id="username" name="username"
+                               placeholder="Choose a username" required>
+                    </div>
+                </div>
+
+                <!-- Email -->
+                <div class="field-group">
+                    <label class="field-label" for="email">Email Address</label>
+                    <div class="field-wrap">
+                        <svg class="field-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <rect x="2" y="5" width="16" height="12" rx="2"/>
+                            <path d="M2 8l8 5 8-5"/>
+                        </svg>
+                        <input type="email" class="field-input" id="email" name="email"
+                               placeholder="you@example.com" required>
+                    </div>
+                </div>
+
+                <!-- Password -->
+                <div class="field-group">
+                    <label class="field-label" for="password">Password</label>
+                    <div class="field-wrap">
+                        <svg class="field-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <rect x="5" y="9" width="10" height="9" rx="2"/>
+                            <path d="M7 9V6a3 3 0 016 0v3"/>
+                            <circle cx="10" cy="13.5" r="1" fill="currentColor"/>
+                        </svg>
+                        <input type="password" class="field-input" id="password" name="password"
+                               placeholder="Create a strong password" required
+                               oninput="updateStrength(this.value)">
+                    </div>
+                    <div class="strength-wrap">
+                        <div class="strength-track">
+                            <div class="strength-fill" id="strengthFill"></div>
+                        </div>
+                        <span class="strength-label" id="strengthLabel"></span>
+                    </div>
+                </div>
+
+                <!-- Confirm Password -->
+                <div class="field-group">
+                    <label class="field-label" for="confirm_password">Confirm Password</label>
+                    <div class="field-wrap">
+                        <svg class="field-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M5 10l4 4 6-6" stroke-linecap="round" stroke-linejoin="round"/>
+                            <circle cx="10" cy="10" r="8"/>
+                        </svg>
+                        <input type="password" class="field-input" id="confirm_password" name="confirm_password"
+                               placeholder="Re-enter your password" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-register">
+                    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="10" cy="7" r="3"/>
+                        <path d="M4 17c0-3.3 2.7-6 6-6s6 2.7 6 6"/>
+                        <path d="M15 4v6M12 7h6" stroke-linecap="round"/>
+                    </svg>
+                    Create Account
+                </button>
+
+                <p class="terms-note">
+                    By registering you agree to our
+                    <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>
+                </p>
+
+            </form>
+
+            <div class="bottom-divider">
+                <div class="bottom-divider-line"></div>
+                <span>Have an account?</span>
+                <div class="bottom-divider-line"></div>
+            </div>
+
+            <a href="{{ url_for('login') }}" class="btn-signin">
+                <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <path d="M13 10H3m7-4l4 4-4 4"/>
+                    <path d="M8 5V4a2 2 0 012-2h5a2 2 0 012 2v12a2 2 0 01-2 2h-5a2 2 0 01-2-2v-1"/>
+                </svg>
+                Sign In Instead
+            </a>
+
         </div>
     </div>
 </div>
 
 <script>
     function updateStrength(val) {
-        const bar = document.getElementById('strengthBar');
+        const fill  = document.getElementById('strengthFill');
+        const label = document.getElementById('strengthLabel');
         let score = 0;
-        if (val.length >= 8)  score += 25;
-        if (val.length >= 12) score += 15;
-        if (/[A-Z]/.test(val)) score += 20;
-        if (/[0-9]/.test(val)) score += 20;
-        if (/[^A-Za-z0-9]/.test(val)) score += 20;
-        bar.style.width = Math.min(score, 100) + '%';
-        if (score < 40)
-            bar.style.background = 'linear-gradient(90deg,#f87171,#fb923c)';
-        else if (score < 70)
-            bar.style.background = 'linear-gradient(90deg,#fb923c,#facc15)';
-        else
-            bar.style.background = 'linear-gradient(90deg,#6a5af9,#d66efd)';
+        if (val.length >= 8)           score += 25;
+        if (val.length >= 12)          score += 15;
+        if (/[A-Z]/.test(val))         score += 20;
+        if (/[0-9]/.test(val))         score += 20;
+        if (/[^A-Za-z0-9]/.test(val))  score += 20;
+        const pct = Math.min(score, 100);
+        fill.style.width = pct + '%';
+
+        if (pct === 0) {
+            fill.style.background = '';
+            label.textContent = '';
+            label.style.color = 'var(--text-light)';
+        } else if (pct < 40) {
+            fill.style.background = 'linear-gradient(90deg, #f87171, #fb923c)';
+            label.textContent = 'Weak';
+            label.style.color = '#f87171';
+        } else if (pct < 70) {
+            fill.style.background = 'linear-gradient(90deg, #fb923c, #facc15)';
+            label.textContent = 'Fair';
+            label.style.color = '#d97706';
+        } else {
+            fill.style.background = 'linear-gradient(90deg, #1a5fa8, #2d8cff)';
+            label.textContent = 'Strong';
+            label.style.color = '#1a5fa8';
+        }
     }
 </script>
 {% endblock %}

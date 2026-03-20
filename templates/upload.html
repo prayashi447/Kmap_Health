@@ -4,6 +4,37 @@
 
 {% block extra_css %}
 <style>
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--blue-950);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Animated background ── */
+   body::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background-image: url("{{ url_for('static', filename='img/Background2.webp') }}");
+        background-size: cover;
+        background-position: center;
+        z-index: 0;
+        opacity: 0.85;
+    }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(77,147,255,.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(77,147,255,.04) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    z-index: 0;
+  }
   .upload-wrapper {
     position: relative;
     z-index: 1;
@@ -341,7 +372,7 @@
             <i class="bi bi-info-circle"></i> How it works
           </div>
           <ol class="info-steps">
-            <li><span class="step-num">1</span> Upload your text or CSV file</li>
+            <li><span class="step-num">1</span> Upload your text, CSV , Json file</li>
             <li><span class="step-num">2</span> Our NLP pipeline extracts entities and relations</li>
             <li><span class="step-num">3</span> Knowledge graph is automatically built</li>
             <li><span class="step-num">4</span> Explore and search your graph</li>

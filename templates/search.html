@@ -1,147 +1,833 @@
 {% extends "base.html" %}
 
-{% block title %}Semantic Search{% endblock %}
+{% block title %}Semantic Search — KMap-Health{% endblock %}
+
+{% block extra_css %}
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+    :root {
+        --blue-deep:   #0a2540;
+        --blue-mid:    #1a5fa8;
+        --blue-bright: #2d8cff;
+        --blue-soft:   #5ba8ff;
+        --blue-pale:   #dceeff;
+        --blue-frost:  #f0f7ff;
+        --white:       #ffffff;
+        --text-dark:   #0a2540;
+        --text-mid:    #3d607e;
+        --text-light:  #7a9ab5;
+        --border:      rgba(45, 140, 255, 0.15);
+        --success:     #0d9e6e;
+        --success-bg:  #e8f8f3;
+        --warn:        #c47d0e;
+        --warn-bg:     #fef3dc;
+        --info:        #1a5fa8;
+        --info-bg:     #e6f1fb;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+        font-family: 'DM Sans', sans-serif;
+        min-height: 100vh;
+        background: transparent;
+        color: var(--text-dark);
+        overflow-x: hidden;
+    }
+
+    /* Background layers */
+    body::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background-image: url("{{ url_for('static', filename='img/Background2.webp') }}");
+        background-size: cover;
+        background-position: center;
+        z-index: 0;
+        opacity: 0.82;
+    }
+    body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(77,147,255,.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(77,147,255,.04) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+
+
+    .grid-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 2;
+        pointer-events: none;
+        background-image:
+            linear-gradient(rgba(45,140,255,0.04) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(45,140,255,0.04) 1px, transparent 1px);
+        background-size: 56px 56px;
+    }
+
+    /* Orbs */
+    .orb {
+        position: fixed;
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: 2;
+        animation: orbFloat ease-in-out infinite;
+    }
+    .orb-1 { width:500px;height:500px;background:radial-gradient(circle,rgba(45,140,255,.16) 0%,transparent 65%);top:-200px;right:-150px;animation-duration:18s; }
+    .orb-2 { width:380px;height:380px;background:radial-gradient(circle,rgba(26,95,168,.2) 0%,transparent 65%);bottom:-150px;left:-100px;animation-duration:22s;animation-delay:-7s; }
+    .orb-3 { width:180px;height:180px;background:radial-gradient(circle,rgba(91,168,255,.14) 0%,transparent 65%);top:40%;right:6%;animation-duration:14s;animation-delay:-4s; }
+
+    @keyframes orbFloat {
+        0%,100% { transform:translate(0,0); }
+        33%      { transform:translate(14px,-22px); }
+        66%      { transform:translate(-9px,14px); }
+    }
+
+    /* ── Page layout ── */
+    .page-wrap {
+        position: relative;
+        z-index: 10;
+        max-width: 820px;
+        margin: 0 auto;
+        padding: 40px 20px 60px;
+    }
+
+    /* ── Page header ── */
+    .page-header {
+        margin-bottom: 28px;
+        animation: fadeDown 0.6s cubic-bezier(0.16,1,0.3,1) both;
+    }
+
+    .page-header-inner {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+
+    .header-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        background: rgba(45,140,255,0.15);
+        border: 1px solid rgba(45,140,255,0.25);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .header-icon svg { color: var(--blue-soft); }
+
+    .page-title {
+        font-family: 'DM Serif Display', Georgia, serif;
+        font-style: italic;
+        font-size: 1.9rem;
+        color: var(--white);
+        letter-spacing: -0.02em;
+        line-height: 1;
+        margin-bottom: 4px;
+    }
+
+    .page-desc {
+        font-size: 0.83rem;
+        color: rgba(255,255,255,0.45);
+        font-weight: 400;
+        letter-spacing: 0.02em;
+    }
+
+    @keyframes fadeDown {
+        from { opacity:0; transform:translateY(-16px); }
+        to   { opacity:1; transform:translateY(0); }
+    }
+
+    /* ── Cards ── */
+    .panel {
+        background: rgba(255,255,255,0.97);
+        border-radius: 20px;
+        border: 1px solid rgba(255,255,255,0.9);
+        box-shadow: 0 24px 64px rgba(10,37,64,0.32), 0 6px 20px rgba(10,37,64,0.18), inset 0 1px 0 rgba(255,255,255,1);
+        overflow: hidden;
+        animation: panelUp 0.7s cubic-bezier(0.16,1,0.3,1) both;
+    }
+
+    .panel + .panel { margin-top: 20px; }
+
+    @keyframes panelUp {
+        from { opacity:0; transform:translateY(24px) scale(0.98); }
+        to   { opacity:1; transform:translateY(0) scale(1); }
+    }
+
+    .panel-accent {
+        height: 3px;
+        background: linear-gradient(90deg, var(--blue-deep) 0%, var(--blue-mid) 40%, var(--blue-bright) 70%, var(--blue-soft) 100%);
+        background-size: 200% 100%;
+        animation: shimmer 3s linear infinite;
+    }
+
+    @keyframes shimmer {
+        0%   { background-position: 0% 0%; }
+        100% { background-position: 200% 0%; }
+    }
+
+    .panel-body { padding: 28px 32px 32px; }
+
+    .panel-title {
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--text-light);
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .panel-title::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: rgba(45,140,255,0.1);
+    }
+
+    /* ── Form grid ── */
+    .search-grid {
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: 16px;
+        align-items: end;
+    }
+
+    @media (max-width: 600px) {
+        .search-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ── Field ── */
+    .field-group { display: flex; flex-direction: column; }
+
+    .field-label {
+        font-size: 0.71rem;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--text-mid);
+        margin-bottom: 8px;
+    }
+
+    .field-wrap { position: relative; display: flex; align-items: center; }
+
+    .field-icon {
+        position: absolute;
+        left: 13px;
+        width: 15px;
+        height: 15px;
+        color: var(--text-light);
+        pointer-events: none;
+        transition: color 0.2s;
+        z-index: 1;
+        flex-shrink: 0;
+    }
+
+    .field-input, .field-select {
+        width: 100%;
+        padding: 12px 14px 12px 40px;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 0.91rem;
+        color: var(--text-dark);
+        background: var(--blue-frost);
+        border: 1.5px solid var(--border);
+        border-radius: 12px;
+        outline: none;
+        transition: all 0.25s ease;
+        -webkit-appearance: none;
+    }
+
+    .field-input::placeholder { color: var(--text-light); font-weight: 300; }
+
+    .field-input:hover, .field-select:hover {
+        border-color: rgba(45,140,255,0.3);
+        background: #f5f9ff;
+    }
+
+    .field-input:focus, .field-select:focus {
+        border-color: var(--blue-bright);
+        background: var(--white);
+        box-shadow: 0 0 0 4px rgba(45,140,255,0.1);
+    }
+
+    .field-wrap:focus-within .field-icon { color: var(--blue-bright); }
+
+    .field-select {
+        cursor: pointer;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a9ab5' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 14px center;
+        background-color: var(--blue-frost);
+        padding-right: 36px;
+    }
+
+    .field-select:focus { background-color: var(--white); }
+
+    /* ── Search button ── */
+    .btn-search {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 13px 20px;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 0.88rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        color: var(--white);
+        background: linear-gradient(135deg, var(--blue-deep) 0%, var(--blue-mid) 55%, var(--blue-bright) 100%);
+        background-size: 200% 100%;
+        background-position: 100% 0;
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.4s cubic-bezier(.22,1,.36,1);
+        box-shadow: 0 6px 20px rgba(26,95,168,0.4), inset 0 1px 0 rgba(255,255,255,0.15);
+        white-space: nowrap;
+        position: relative;
+        overflow: hidden;
+        height: 46px;
+    }
+
+    .btn-search::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.12) 50%, transparent 100%);
+        transform: translateX(-100%);
+        transition: transform 0.5s ease;
+    }
+
+    .btn-search:hover {
+        background-position: 0% 0;
+        transform: translateY(-2px);
+        box-shadow: 0 10px 28px rgba(26,95,168,0.5), inset 0 1px 0 rgba(255,255,255,0.2);
+    }
+
+    .btn-search:hover::before { transform: translateX(100%); }
+    .btn-search:active { transform: translateY(0); }
+
+    .btn-search.loading { pointer-events: none; opacity: 0.8; }
+
+    /* ── Results panel ── */
+    #results-panel {
+        display: none;
+        animation: panelUp 0.5s cubic-bezier(0.16,1,0.3,1) both;
+    }
+
+    #results-panel.visible { display: block; }
+
+    /* ── Results meta bar ── */
+    .results-meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .results-query {
+        font-size: 0.85rem;
+        color: var(--text-mid);
+    }
+
+    .results-query strong {
+        color: var(--blue-mid);
+        font-weight: 600;
+    }
+
+    .results-count {
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-light);
+        background: var(--blue-frost);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 4px 12px;
+    }
+
+    /* ── Section heading ── */
+    .section-heading {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+        margin-top: 24px;
+    }
+
+    .section-heading:first-child { margin-top: 0; }
+
+    .section-heading-label {
+        font-size: 0.73rem;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--text-mid);
+    }
+
+    .section-heading-line {
+        flex: 1;
+        height: 1px;
+        background: rgba(45,140,255,0.1);
+    }
+
+    .section-badge {
+        font-size: 0.68rem;
+        font-weight: 600;
+        color: var(--blue-mid);
+        background: var(--info-bg);
+        border: 1px solid rgba(45,140,255,0.2);
+        border-radius: 20px;
+        padding: 2px 10px;
+    }
+
+    /* ── Result items ── */
+    .result-list { display: flex; flex-direction: column; gap: 8px; }
+
+    .result-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 14px 16px;
+        background: var(--blue-frost);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        transition: all 0.2s ease;
+        animation: itemSlide 0.4s ease both;
+    }
+
+    .result-item:hover {
+        border-color: rgba(45,140,255,0.3);
+        background: #edf5ff;
+        transform: translateX(3px);
+        box-shadow: 0 4px 16px rgba(45,140,255,0.1);
+    }
+
+    @keyframes itemSlide {
+        from { opacity:0; transform:translateX(-8px); }
+        to   { opacity:1; transform:translateX(0); }
+    }
+
+    .result-left { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+
+    .result-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--blue-bright);
+        flex-shrink: 0;
+        opacity: 0.5;
+    }
+
+    .result-name {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--text-dark);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Relation items */
+    .relation-flow {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 1;
+        min-width: 0;
+        flex-wrap: wrap;
+    }
+
+    .rel-entity {
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: var(--text-dark);
+    }
+
+    .rel-arrow {
+        width: 16px;
+        height: 16px;
+        color: var(--text-light);
+        flex-shrink: 0;
+    }
+
+    /* ── Badges ── */
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        font-size: 0.67rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 3px 9px;
+        border-radius: 20px;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    .badge-type {
+        background: var(--info-bg);
+        color: var(--info);
+        border: 1px solid rgba(26,95,168,0.2);
+    }
+
+    .badge-rel {
+        background: var(--warn-bg);
+        color: var(--warn);
+        border: 1px solid rgba(196,125,14,0.2);
+    }
+
+    .badge-score {
+        background: var(--success-bg);
+        color: var(--success);
+        border: 1px solid rgba(13,158,110,0.2);
+        font-variant-numeric: tabular-nums;
+        min-width: 60px;
+        justify-content: center;
+    }
+
+    /* ── Loading state ── */
+    .loading-state {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 20px 0;
+        color: var(--text-light);
+        font-size: 0.85rem;
+    }
+
+    .spinner {
+        width: 18px;
+        height: 18px;
+        border: 2px solid rgba(45,140,255,0.2);
+        border-top-color: var(--blue-bright);
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+        flex-shrink: 0;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Empty state ── */
+    .empty-state {
+        text-align: center;
+        padding: 32px 20px;
+        color: var(--text-light);
+    }
+
+    .empty-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: var(--blue-frost);
+        border: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 12px;
+    }
+
+    .empty-state p {
+        font-size: 0.85rem;
+        margin-top: 4px;
+    }
+
+    /* ── Error state ── */
+    .error-state {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 16px;
+        background: #fff5f5;
+        border: 1px solid rgba(220,38,38,0.2);
+        border-radius: 12px;
+        color: #b91c1c;
+        font-size: 0.85rem;
+    }
+
+    /* ── Score bar ── */
+    .score-bar-wrap {
+        width: 56px;
+        height: 3px;
+        background: rgba(45,140,255,0.1);
+        border-radius: 4px;
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+
+    .score-bar-fill {
+        height: 100%;
+        border-radius: 4px;
+        background: linear-gradient(90deg, var(--blue-mid), var(--blue-bright));
+        transition: width 0.6s ease;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">
-                <h4 class="mb-0">Semantic Search</h4>
+<div class="grid-overlay"></div>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<div class="page-wrap">
+
+    <!-- Page header -->
+    <div class="page-header">
+        <div class="page-header-inner">
+            <div class="header-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <circle cx="11" cy="11" r="7"/>
+                    <path d="M21 21l-4.35-4.35" stroke-linecap="round"/>
+                    <path d="M8 11h6M11 8v6" stroke-linecap="round"/>
+                </svg>
             </div>
-            <div class="card-body">
-                <form id="searchForm">
-                    <div class="mb-3">
-                        <label for="dataset" class="form-label">Select Dataset</label>
-                        <select class="form-select" id="dataset" name="dataset_id" required>
-                            <option value="">Choose a dataset</option>
-                            {% for dataset in datasets %}
-                            <option value="{{ dataset.id }}">{{ dataset.name }} ({{ dataset.domain }})</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="query" class="form-label">Search Query</label>
-                        <div class="input-group">
-                            <input type="text" class="form-control" id="query" name="query" 
-                                   placeholder="e.g., Einstein's theory of relativity" required>
-                            <button class="btn btn-primary" type="submit">
-                                <i class="bi bi-search"></i> Search
-                            </button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-        
-        <!-- Results Section -->
-        <div id="results" class="mt-4" style="display: none;">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Search Results</h5>
-                </div>
-                <div class="card-body">
-                    <div id="entitiesResults"></div>
-                    <div id="relationsResults" class="mt-3"></div>
-                </div>
+            <div>
+                <div class="page-title">Semantic Search</div>
+                <div class="page-desc">Find entities and relations by meaning, not just keywords</div>
             </div>
         </div>
     </div>
+
+    <!-- Search panel -->
+    <div class="panel">
+        <div class="panel-accent"></div>
+        <div class="panel-body">
+            <div class="panel-title">Configure Search</div>
+            <form id="searchForm">
+                <div class="search-grid">
+                    <!-- Dataset select -->
+                    <div class="field-group">
+                        <label class="field-label" for="dataset">Dataset</label>
+                        <div class="field-wrap">
+                            <svg class="field-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <ellipse cx="10" cy="5" rx="7" ry="2.5"/>
+                                <path d="M3 5v5c0 1.4 3.1 2.5 7 2.5S17 11.4 17 10V5"/>
+                                <path d="M3 10v5c0 1.4 3.1 2.5 7 2.5S17 16.4 17 15v-5"/>
+                            </svg>
+                            <select class="field-select" id="dataset" name="dataset_id" required>
+                                <option value="">Choose a dataset</option>
+                                {% for dataset in datasets %}
+                                <option value="{{ dataset.id }}">{{ dataset.name }} ({{ dataset.domain }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Query input + button -->
+                    <div class="field-group">
+                        <label class="field-label" for="query">Search Query</label>
+                        <div style="display:flex;gap:10px;align-items:stretch;">
+                            <div class="field-wrap" style="flex:1;">
+                                <svg class="field-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <circle cx="9" cy="9" r="5.5"/>
+                                    <path d="M18 18l-3.5-3.5" stroke-linecap="round"/>
+                                </svg>
+                                <input type="text" class="field-input" id="query" name="query"
+                                       placeholder="e.g., Einstein's theory of relativity" required>
+                            </div>
+                            <button type="submit" class="btn-search" id="searchBtn">
+                                <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="9" cy="9" r="5.5"/>
+                                    <path d="M18 18l-3.5-3.5" stroke-linecap="round"/>
+                                </svg>
+                                Search
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Results panel -->
+    <div class="panel" id="results-panel">
+        <div class="panel-accent"></div>
+        <div class="panel-body">
+            <div id="results-meta" class="results-meta" style="display:none;"></div>
+            <div id="results-body"></div>
+        </div>
+    </div>
+
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-    document.getElementById('searchForm').addEventListener('submit', function(e) {
+    const form       = document.getElementById('searchForm');
+    const btn        = document.getElementById('searchBtn');
+    const panel      = document.getElementById('results-panel');
+    const metaEl     = document.getElementById('results-meta');
+    const bodyEl     = document.getElementById('results-body');
+
+    form.addEventListener('submit', function(e) {
         e.preventDefault();
-        
         const datasetId = document.getElementById('dataset').value;
-        const query = document.getElementById('query').value;
-        
-        if (!datasetId || !query) {
-            alert('Please select a dataset and enter a query');
-            return;
-        }
-        
-        // Show loading
-        document.getElementById('results').style.display = 'block';
-        document.getElementById('entitiesResults').innerHTML = '<p class="text-muted">Searching...</p>';
-        document.getElementById('relationsResults').innerHTML = '';
-        
-        // Make search request
+        const query     = document.getElementById('query').value.trim();
+        if (!datasetId || !query) return;
+
+        // Loading state
+        btn.classList.add('loading');
+        btn.innerHTML = `
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin .7s linear infinite">
+                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+            </svg>
+            Searching…`;
+
+        panel.classList.add('visible');
+        metaEl.style.display = 'none';
+        bodyEl.innerHTML = `
+            <div class="loading-state">
+                <div class="spinner"></div>
+                Searching for <strong style="color:var(--blue-mid);margin:0 4px;">"${escHtml(query)}"</strong> …
+            </div>`;
+
         fetch('/search', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: new URLSearchParams({
-                'dataset_id': datasetId,
-                'query': query
-            })
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ dataset_id: datasetId, query })
         })
-        .then(response => response.json())
-        .then(data => {
-            displayResults(data);
+        .then(r => r.json())
+        .then(data => renderResults(data, query))
+        .catch(() => {
+            bodyEl.innerHTML = `
+                <div class="error-state">
+                    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <circle cx="10" cy="10" r="8"/>
+                        <path d="M10 6v4M10 14h.01" stroke-linecap="round"/>
+                    </svg>
+                    An error occurred while performing the search. Please try again.
+                </div>`;
         })
-        .catch(error => {
-            console.error('Error:', error);
-            document.getElementById('entitiesResults').innerHTML = '<p class="text-danger">Error performing search</p>';
+        .finally(() => {
+            btn.classList.remove('loading');
+            btn.innerHTML = `
+                <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="9" cy="9" r="5.5"/>
+                    <path d="M18 18l-3.5-3.5" stroke-linecap="round"/>
+                </svg>
+                Search`;
         });
     });
-    
-    function displayResults(data) {
+
+    function renderResults(data, query) {
+        const entities  = data.entities  || [];
+        const relations = data.relations || [];
+        const total     = entities.length + relations.length;
+
+        // Meta bar
+        metaEl.style.display = 'flex';
+        metaEl.innerHTML = `
+            <span class="results-query">Results for <strong>"${escHtml(query)}"</strong></span>
+            <span class="results-count">${total} result${total !== 1 ? 's' : ''}</span>`;
+
+        if (total === 0) {
+            bodyEl.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-light)" stroke-width="1.5">
+                            <circle cx="11" cy="11" r="7"/>
+                            <path d="M21 21l-4.35-4.35" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <strong style="color:var(--text-mid);font-size:.88rem;">No results found</strong>
+                    <p>Try a different query or select another dataset.</p>
+                </div>`;
+            return;
+        }
+
         let html = '';
-        
-        // Display entities
-        if (data.entities && data.entities.length > 0) {
-            html += '<h6>Related Entities:</h6><div class="list-group mb-3">';
-            data.entities.forEach(item => {
+
+        // Entities
+        if (entities.length > 0) {
+            html += `
+                <div class="section-heading">
+                    <span class="section-heading-label">Entities</span>
+                    <span class="section-badge">${entities.length}</span>
+                    <div class="section-heading-line"></div>
+                </div>
+                <div class="result-list">`;
+            entities.forEach((item, i) => {
+                const pct = (item.score * 100).toFixed(1);
                 html += `
-                    <div class="list-group-item">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <strong>${item.entity.name}</strong>
-                                <span class="badge bg-info">${item.entity.type}</span>
-                            </div>
-                            <span class="badge bg-success">${(item.score * 100).toFixed(1)}% match</span>
+                    <div class="result-item" style="animation-delay:${i * 50}ms">
+                        <div class="result-left">
+                            <div class="result-dot"></div>
+                            <span class="result-name">${escHtml(item.entity.name)}</span>
+                            <span class="badge badge-type">${escHtml(item.entity.type)}</span>
                         </div>
-                    </div>
-                `;
+                        <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+                            <div class="score-bar-wrap">
+                                <div class="score-bar-fill" style="width:${pct}%"></div>
+                            </div>
+                            <span class="badge badge-score">${pct}%</span>
+                        </div>
+                    </div>`;
             });
             html += '</div>';
         }
-        
-        document.getElementById('entitiesResults').innerHTML = html;
-        
-        // Display relations
-        html = '';
-        if (data.relations && data.relations.length > 0) {
-            html += '<h6>Related Relations:</h6><div class="list-group">';
-            data.relations.forEach(item => {
+
+        // Relations
+        if (relations.length > 0) {
+            html += `
+                <div class="section-heading" style="margin-top:${entities.length > 0 ? '24px' : '0'}">
+                    <span class="section-heading-label">Relations</span>
+                    <span class="section-badge">${relations.length}</span>
+                    <div class="section-heading-line"></div>
+                </div>
+                <div class="result-list">`;
+            relations.forEach((item, i) => {
+                const pct = (item.score * 100).toFixed(1);
                 html += `
-                    <div class="list-group-item">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <strong>${item.relation.entity1}</strong> 
-                                <i class="bi bi-arrow-right"></i> 
-                                <span class="badge bg-warning">${item.relation.type}</span>
-                                <i class="bi bi-arrow-right"></i> 
-                                <strong>${item.relation.entity2}</strong>
-                            </div>
-                            <span class="badge bg-success">${(item.score * 100).toFixed(1)}% match</span>
+                    <div class="result-item" style="animation-delay:${(entities.length + i) * 50}ms">
+                        <div class="relation-flow">
+                            <div class="result-dot"></div>
+                            <span class="rel-entity">${escHtml(item.relation.entity1)}</span>
+                            <svg class="rel-arrow" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M4 10h12M12 6l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <span class="badge badge-rel">${escHtml(item.relation.type)}</span>
+                            <svg class="rel-arrow" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M4 10h12M12 6l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <span class="rel-entity">${escHtml(item.relation.entity2)}</span>
                         </div>
-                    </div>
-                `;
+                        <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+                            <div class="score-bar-wrap">
+                                <div class="score-bar-fill" style="width:${pct}%"></div>
+                            </div>
+                            <span class="badge badge-score">${pct}%</span>
+                        </div>
+                    </div>`;
             });
             html += '</div>';
         }
-        
-        document.getElementById('relationsResults').innerHTML = html;
-        
-        if (!data.entities || !data.relations || (data.entities.length === 0 && data.relations.length === 0)) {
-            document.getElementById('entitiesResults').innerHTML = '<p class="text-muted">No results found</p>';
-        }
+
+        bodyEl.innerHTML = html;
+    }
+
+    function escHtml(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
     }
 </script>
 {% endblock %}

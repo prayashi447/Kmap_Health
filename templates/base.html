@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 
-    <style>
+<style>
         /* ── Global Reset & Tokens ── */
         :root {
             --blue-950: #020b1a;
@@ -29,7 +29,7 @@
             --text-primary: #e8f2ff;
             --text-secondary: rgba(179, 210, 255, 0.7);
             --shadow-card: 0 4px 24px rgba(2, 11, 26, 0.5);
-            --nav-height: 64px;
+            --sidebar-width: 300px; /* ← was 240px */
         }
 
         *, *::before, *::after { box-sizing: border-box; }
@@ -40,6 +40,8 @@
             color: var(--text-primary);
             min-height: 100vh;
             overflow-x: hidden;
+            margin: 0;
+            padding: 0;
         }
 
         /* ── Animated deep-space background ── */
@@ -67,140 +69,280 @@
             z-index: 0;
         }
 
-        /* ── Navbar ── */
-        .navbar {
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            height: var(--nav-height);
-            background: rgba(5, 20, 40, 0.82) !important;
-            backdrop-filter: blur(20px) saturate(1.4);
-            -webkit-backdrop-filter: blur(20px) saturate(1.4);
-            border-bottom: 1px solid var(--border-blue);
-            box-shadow: 0 4px 32px rgba(2, 11, 26, 0.45);
-            padding: 0 1.5rem;
+        /* ── Page layout wrapper ── */
+        .page-wrapper {
+            display: flex;
+            min-height: 100vh;
+            position: relative;
+            z-index: 1;
         }
 
-        .navbar-brand {
+        /* ── Left Sidebar ── */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: rgba(5, 20, 40, 0.92);
+            backdrop-filter: blur(24px) saturate(1.5);
+            -webkit-backdrop-filter: blur(24px) saturate(1.5);
+            border-right: 1px solid var(--border-blue);
+            box-shadow: 4px 0 32px rgba(2, 11, 26, 0.5);
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+            overflow-y: auto;
+            overflow-x: hidden;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Subtle inner glow on sidebar */
+        .sidebar::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg,
+                rgba(26, 110, 245, 0.07) 0%,
+                transparent 40%,
+                rgba(0, 212, 255, 0.04) 100%);
+            pointer-events: none;
+        }
+
+        /* ── Sidebar Brand / Logo area ── */
+        .sidebar-brand {
+            padding: 1.75rem 1.5rem 1.5rem; /* slightly more padding */
+            border-bottom: 1px solid var(--border-blue);
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.85rem;
+            flex-shrink: 0;
+        }
+
+        .sidebar-logo-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            width: 100%;
+        }
+
+        .custom-logo {
+            height: 40px; /* ← was 36px */
+            width: auto;
+            max-width: 140px; /* ← was 120px */
+            object-fit: contain;
+            border-radius: 8px;
+            filter: brightness(1.05) contrast(1.02);
+            transition: all 0.25s ease;
+        }
+
+        .custom-logo:hover { filter: brightness(1.12); }
+
+        .fallback-emblem {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            width: 40px; /* ← was 36px */
+            height: 40px; /* ← was 36px */
+            background: linear-gradient(135deg, var(--blue-600), var(--blue-700));
+            border-radius: 10px;
+            border: 1px solid rgba(77, 147, 255, 0.4);
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
+            flex-shrink: 0;
+        }
+
+        .fallback-emblem i {
+            font-size: 1.5rem; /* ← was 1.3rem */
+            color: var(--accent-cyan);
+        }
+
+        .sidebar-title {
             font-family: 'Syne', sans-serif;
-            font-size: 1.15rem;
+            font-size: 1.2rem; /* ← was 1.05rem */
             font-weight: 800;
-            letter-spacing: -.3px;
+            letter-spacing: -0.3px;
             background: linear-gradient(135deg, #fff 30%, var(--accent-cyan) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            display: flex;
-            align-items: center;
-            gap: .45rem;
             text-decoration: none;
-        }
-
-        .navbar-brand i {
-            background: linear-gradient(135deg, var(--blue-400), var(--accent-cyan));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            font-size: 1.3rem;
-        }
-
-        .navbar-brand::before {
-            content: '';
-            display: inline-block;
-            width: 8px; height: 8px;
-            border-radius: 50%;
-            background: var(--accent-cyan);
-            box-shadow: 0 0 8px var(--accent-cyan);
-            flex-shrink: 0;
-        }
-
-        /* Nav links */
-        .navbar-nav { gap: .15rem; align-items: center; }
-
-        .nav-link {
-            font-family: 'DM Sans', sans-serif;
-            font-size: .85rem;
-            font-weight: 500;
-            color: var(--blue-200) !important;
-            padding: .45rem .85rem !important;
-            border-radius: 10px;
-            border: 1px solid transparent;
-            display: flex;
-            align-items: center;
-            gap: .4rem;
-            transition: all .2s ease;
+            line-height: 1.2;
             white-space: nowrap;
         }
 
-        .nav-link i { font-size: .9rem; }
+        .sidebar-title:hover {
+            -webkit-text-fill-color: transparent;
+        }
 
-        .nav-link:hover {
-            color: #fff !important;
+        /* ── Sidebar Nav ── */
+        .sidebar-nav {
+            flex: 1;
+            padding: 1.25rem 1.5rem; /* ← slightly more padding */
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem; /* ← was 0.2rem */
+        }
+
+        .sidebar-nav-label {
+            font-size: 0.78rem; /* ← was 0.80rem — kept compact for label */
+            font-weight: 700;
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            padding: 0.85rem 0.6rem 0.35rem;
+            opacity: 0.65;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem; /* ← was 0.75rem */
+            padding: 0.78rem 1rem; /* ← was 0.65rem 0.85rem */
+            border-radius: 12px;
+            border: 1px solid transparent;
+            color: var(--blue-200);
+            text-decoration: none;
+            font-size: 1.0rem; /* ← was 0.875rem — key font increase */
+            font-weight: 500;
+            font-family: 'DM Sans', sans-serif;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            position: relative;
+        }
+
+        .sidebar-link i {
+            font-size: 1.2rem; /* ← was 1.05rem */
+            width: 22px; /* ← was 20px */
+            text-align: center;
+            flex-shrink: 0;
+            color: var(--blue-300);
+            transition: color 0.2s ease;
+        }
+
+        .sidebar-link:hover {
+            color: #fff;
             background: rgba(26, 110, 245, 0.18);
             border-color: var(--border-blue);
         }
 
-        .nav-link.active {
-            color: #fff !important;
+        .sidebar-link:hover i {
+            color: var(--accent-cyan);
+        }
+
+        .sidebar-link.active {
+            color: #fff;
             background: rgba(26, 110, 245, 0.22);
             border-color: rgba(77, 147, 255, 0.35);
         }
 
-        /* Logout special style */
-        .nav-link.logout {
-            color: rgba(248, 113, 113, 0.85) !important;
+        .sidebar-link.active i {
+            color: var(--accent-cyan);
         }
 
-        .nav-link.logout:hover {
-            color: #fca5a5 !important;
-            background: rgba(239, 68, 68, 0.12);
-            border-color: rgba(239, 68, 68, 0.25);
+        /* Active indicator bar */
+        .sidebar-link.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 20%;
+            height: 60%;
+            width: 3px;
+            background: var(--accent-cyan);
+            border-radius: 0 3px 3px 0;
         }
 
-        /* Navbar toggler */
-        .navbar-toggler {
-            border: 1px solid var(--border-blue) !important;
-            border-radius: 10px !important;
-            padding: .35rem .55rem !important;
+        .sidebar-link.admin-link {
+            color: var(--accent-cyan);
+            border-color: rgba(0, 212, 255, 0.1);
         }
 
-        .navbar-toggler:focus { box-shadow: 0 0 0 3px rgba(77,147,255,.2) !important; }
+        .sidebar-link.admin-link i { color: var(--accent-cyan); }
 
-        .navbar-toggler-icon {
-            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(77,147,255,0.9)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e") !important;
-        }
-
-        /* Collapsed nav on mobile */
-        .navbar-collapse {
-            background: rgba(5, 20, 40, 0.97);
-            border: 1px solid var(--border-blue);
-            border-radius: 16px;
-            margin-top: .5rem;
-            padding: .75rem 1rem;
-        }
-
-        @media (min-width: 992px) {
-            .navbar-collapse {
-                background: transparent !important;
-                border: none !important;
-                border-radius: 0 !important;
-                margin-top: 0 !important;
-                padding: 0 !important;
-            }
-        }
-
-        /* Admin badge highlight */
-        .nav-link.admin-link {
-            color: var(--accent-cyan) !important;
-            border-color: rgba(0, 212, 255, 0.15);
-        }
-
-        .nav-link.admin-link:hover {
+        .sidebar-link.admin-link:hover {
             background: rgba(0, 212, 255, 0.1);
             border-color: rgba(0, 212, 255, 0.3);
         }
 
-        /* ── Main content wrapper ── */
+        /* ── Sidebar Divider ── */
+        .sidebar-divider {
+            height: 1px;
+            background: var(--border-blue);
+            margin: 0.5rem 0.75rem;
+        }
+
+        /* ── Logout at bottom ── */
+        .sidebar-footer {
+            padding: 0.85rem; /* ← was 0.75rem */
+            border-top: 1px solid var(--border-blue);
+            flex-shrink: 0;
+        }
+
+        .sidebar-link.logout {
+            color: rgba(248, 113, 113, 0.85);
+        }
+
+        .sidebar-link.logout i { color: rgba(248, 113, 113, 0.7); }
+
+        .sidebar-link.logout:hover {
+            color: #fca5a5;
+            background: rgba(239, 68, 68, 0.12);
+            border-color: rgba(239, 68, 68, 0.25);
+        }
+
+        .sidebar-link.logout:hover i { color: #fca5a5; }
+
+        /* ── Mobile toggle button ── */
+        .sidebar-toggle {
+            display: none;
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 1100;
+            width: 46px; /* ← was 42px */
+            height: 46px; /* ← was 42px */
+            background: rgba(5, 20, 40, 0.92);
+            border: 1px solid var(--border-blue);
+            border-radius: 12px;
+            color: var(--blue-300);
+            font-size: 1.3rem; /* ← was 1.2rem */
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(12px);
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-toggle:hover {
+            background: rgba(26, 110, 245, 0.2);
+            color: var(--accent-cyan);
+            border-color: rgba(0, 212, 255, 0.3);
+        }
+
+        /* Overlay for mobile */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(2, 11, 26, 0.7);
+            z-index: 999;
+            backdrop-filter: blur(2px);
+        }
+
+        /* ── Main content area ── */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            flex: 1;
+            min-height: 100vh;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* No sidebar case (unauthenticated) */
+        .main-content.no-sidebar {
+            margin-left: 0;
+        }
+
         main.container {
             position: relative;
             z-index: 1;
@@ -217,22 +359,18 @@
             border-radius: 14px !important;
             color: var(--text-primary) !important;
             backdrop-filter: blur(16px);
-            font-size: .88rem;
+            font-size: .94rem; /* ← was .88rem */
             font-weight: 500;
             box-shadow: var(--shadow-card);
             animation: slideInAlert .35s ease both;
         }
 
-        .alert-info  { border-left-color: var(--blue-400) !important; }
+        .alert-info    { border-left-color: var(--blue-400) !important; }
         .alert-success { border-left-color: var(--accent-teal) !important; }
         .alert-warning { border-left-color: #fbbf24 !important; }
         .alert-danger  { border-left-color: #f87171 !important; }
 
-        .btn-close {
-            filter: invert(1) !important;
-            opacity: .45 !important;
-        }
-
+        .btn-close { filter: invert(1) !important; opacity: .45 !important; }
         .btn-close:hover { opacity: .9 !important; }
 
         @keyframes slideInAlert {
@@ -246,10 +384,36 @@
         ::-webkit-scrollbar-thumb { background: var(--blue-700); border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: var(--blue-500); }
 
-        /* ── Selection ── */
         ::selection {
             background: rgba(26, 110, 245, 0.35);
             color: #fff;
+        }
+
+        /* ── Mobile Responsive ── */
+        @media (max-width: 991px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .sidebar-overlay.active {
+                display: block;
+            }
+
+            .sidebar-toggle {
+                display: flex;
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            main.container {
+                padding-top: 4.5rem; /* space for toggle button */
+            }
         }
     </style>
 
@@ -257,104 +421,187 @@
 </head>
 <body>
 
+<div class="page-wrapper">
+
     {% if current_user.is_authenticated %}
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container-fluid">
 
-            <a class="navbar-brand" href="{{ url_for('dashboard') }}">
-                <i class="bi bi-diagram-3"></i> KMap-Health
-            </a>
+    <!-- Mobile overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-            <button class="navbar-toggler" type="button"
-                    data-bs-toggle="collapse" data-bs-target="#navbarNav"
-                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
+    <!-- Mobile toggle button -->
+    <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle navigation">
+        <i class="bi bi-list"></i>
+    </button>
 
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
+    <!-- ── Left Sidebar ── -->
+    <aside class="sidebar" id="sidebar">
 
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('dashboard') }}">
-                            <i class="bi bi-speedometer2"></i> Dashboard
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('datasets') }}">
-                            <i class="bi bi-search"></i> Dataset
-                        </a>
-                    </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('upload') }}">
-                            <i class="bi bi-cloud-upload"></i> Upload
-                        </a>
-                    </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('search') }}">
-                            <i class="bi bi-search"></i> Search
-                        </a>
-                    </li>
-
-                    {% if current_user.is_admin %}
-                    <li class="nav-item">
-                        <a class="nav-link admin-link" href="{{ url_for('admin') }}">
-                            <i class="bi bi-shield-lock"></i> Admin
-                        </a>
-                    </li>
-                    {% endif %}
-
-                    <!-- Divider -->
-                    <li class="nav-item" style="margin-left:.5rem; padding-left:.5rem; border-left:1px solid var(--border-blue);">
-                        <a class="nav-link logout" href="{{ url_for('logout') }}">
-                            <i class="bi bi-box-arrow-right"></i> Logout
-                        </a>
-                    </li>
-
-                </ul>
+        <!-- Brand / Logo -->
+        <div class="sidebar-brand">
+            <div class="sidebar-logo-row">
+                <img class="custom-logo"
+                     id="navbarLogo"
+                     src="{{ url_for('static', filename='img/infosys logo.avif') }}"
+                     alt="Company Logo"
+                     onerror="handleLogoError(this)">
+                
+                <a class="sidebar-title" href="{{ url_for('dashboard') }}">KMap-Health</a>
             </div>
         </div>
-    </nav>
+
+        <!-- Nav links -->
+        <nav class="sidebar-nav">
+            <span class="sidebar-nav-label">Navigation</span>
+
+            <a class="sidebar-link" href="{{ url_for('dashboard') }}">
+                <i class="bi bi-speedometer2"></i>
+                <span>Dashboard</span>
+            </a>
+
+            <a class="sidebar-link" href="{{ url_for('datasets') }}">
+                <i class="bi bi-database"></i>
+                <span>Dataset</span>
+            </a>
+
+            <a class="sidebar-link" href="{{ url_for('upload') }}">
+                <i class="bi bi-cloud-upload"></i>
+                <span>Upload</span>
+            </a>
+
+            <a class="sidebar-link" href="{{ url_for('search') }}">
+                <i class="bi bi-search"></i>
+                <span>Search</span>
+            </a>
+
+            {% if current_user.is_admin %}
+            <div class="sidebar-divider"></div>
+            <span class="sidebar-nav-label">Admin</span>
+
+            <a class="sidebar-link admin-link" href="{{ url_for('admin') }}">
+                <i class="bi bi-shield-lock"></i>
+                <span>Admin Panel</span>
+            </a>
+            {% endif %}
+        </nav>
+
+        <!-- Logout pinned to bottom -->
+        <div class="sidebar-footer">
+            <a class="sidebar-link logout" href="{{ url_for('logout') }}">
+                <i class="bi bi-box-arrow-right"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+
+    </aside>
+
     {% endif %}
 
-    <main class="container mt-4">
+    <!-- ── Main content ── -->
+    <div class="main-content {% if not current_user.is_authenticated %}no-sidebar{% endif %}">
+        <main class="container mt-4">
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                <div class="alert alert-{{ category if category != 'message' else 'info' }} alert-dismissible fade show" role="alert">
-                    {% if category == 'success' %}<i class="bi bi-check-circle me-2"></i>
-                    {% elif category == 'danger'  %}<i class="bi bi-exclamation-circle me-2"></i>
-                    {% elif category == 'warning' %}<i class="bi bi-exclamation-triangle me-2"></i>
-                    {% else %}<i class="bi bi-info-circle me-2"></i>{% endif %}
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                    <div class="alert alert-{{ category if category != 'message' else 'info' }} alert-dismissible fade show" role="alert">
+                        {% if category == 'success' %}<i class="bi bi-check-circle me-2"></i>
+                        {% elif category == 'danger'  %}<i class="bi bi-exclamation-circle me-2"></i>
+                        {% elif category == 'warning' %}<i class="bi bi-exclamation-triangle me-2"></i>
+                        {% else %}<i class="bi bi-info-circle me-2"></i>{% endif %}
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
 
-        {% block content %}{% endblock %}
+            {% block content %}{% endblock %}
 
-    </main>
+        </main>
+    </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</div><!-- /page-wrapper -->
 
-    <script>
-        // Auto-mark active nav link
-        document.addEventListener('DOMContentLoaded', function () {
-            const links = document.querySelectorAll('.nav-link');
-            links.forEach(link => {
-                if (link.href && link.href === window.location.href) {
-                    link.classList.add('active');
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+<script>
+    // ── Logo fallback ──
+    function handleLogoError(imgElement) {
+        if (imgElement) {
+            imgElement.style.display = 'none';
+        }
+        const fallback = document.getElementById('fallbackEmblem');
+        if (fallback) {
+            fallback.style.display = 'flex';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+
+        // Logo integrity check
+        const logoImg = document.getElementById('navbarLogo');
+        if (logoImg) {
+            if (!logoImg.complete || (typeof logoImg.naturalWidth !== 'undefined' && logoImg.naturalWidth === 0)) {
+                handleLogoError(logoImg);
+            }
+            const srcAttr = logoImg.getAttribute('src');
+            if (!srcAttr || srcAttr === '' || srcAttr.indexOf('undefined') !== -1) {
+                handleLogoError(logoImg);
+            }
+        }
+
+        // ── Active nav link highlighting ──
+        const links = document.querySelectorAll('.sidebar-link');
+        links.forEach(link => {
+            if (link.href && link.href === window.location.href) {
+                link.classList.add('active');
+            }
+        });
+
+        // ── Mobile sidebar toggle ──
+        const toggle   = document.getElementById('sidebarToggle');
+        const sidebar  = document.getElementById('sidebar');
+        const overlay  = document.getElementById('sidebarOverlay');
+
+        if (toggle && sidebar) {
+            toggle.addEventListener('click', function () {
+                sidebar.classList.toggle('open');
+                overlay.classList.toggle('active');
+                // Swap icon
+                const icon = toggle.querySelector('i');
+                if (sidebar.classList.contains('open')) {
+                    icon.className = 'bi bi-x-lg';
+                } else {
+                    icon.className = 'bi bi-list';
+                }
+            });
+        }
+
+        if (overlay) {
+            overlay.addEventListener('click', function () {
+                if (sidebar) sidebar.classList.remove('open');
+                overlay.classList.remove('active');
+                const icon = toggle && toggle.querySelector('i');
+                if (icon) icon.className = 'bi bi-list';
+            });
+        }
+
+        // Close sidebar on nav link click (mobile)
+        links.forEach(link => {
+            link.addEventListener('click', function () {
+                if (window.innerWidth < 992 && sidebar) {
+                    sidebar.classList.remove('open');
+                    if (overlay) overlay.classList.remove('active');
+                    const icon = toggle && toggle.querySelector('i');
+                    if (icon) icon.className = 'bi bi-list';
                 }
             });
         });
-    </script>
+    });
+</script>
 
-    {% block extra_js %}{% endblock %}
+{% block extra_js %}{% endblock %}
 </body>
 </html>

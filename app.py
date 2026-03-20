@@ -284,414 +284,426 @@ def datasets():
     
     return render_template('datasets.html', datasets=datasets, stats=stats)
 # ============================================
-# 5. WIKIPEDIA AND ARXIV ROUTES
+# 5. WIKIPEDIA AND ARXIV ROUTES (FIXED)
 # ============================================
 
-# Add this helper function at the top of your file
-def is_healthcare_software_related(text, title, categories=None):
-    """Check if content is related to healthcare AND software/technology"""
-    
-    # Healthcare-related keywords
-    healthcare_keywords = [
-        'healthcare', 'medical', 'clinical', 'health', 'patient', 'hospital',
-        'disease', 'diagnosis', 'treatment', 'therapy', 'medicine', 'drug',
-        'surgery', 'physician', 'doctor', 'nurse', 'care', 'wellness',
-        'epidemiology', 'public health', 'mental health', 'cardiology',
-        'oncology', 'neurology', 'pediatrics', 'radiology', 'pathology',
-        'pharmacy', 'pharmaceutical', 'vaccine', 'symptom', 'disorder',
-        'syndrome', 'infection', 'chronic', 'acute', 'rehabilitation',
-        'telemedicine', 'ehr', 'emr', 'electronic health record'
-    ]
-    
-    # Software/Technology-related keywords
-    software_keywords = [
-        'software', 'application', 'app', 'system', 'platform', 'algorithm',
-        'artificial intelligence', 'ai', 'machine learning', 'ml', 'deep learning',
-        'neural network', 'data', 'database', 'analytics', 'informatics',
-        'computer', 'digital', 'technology', 'tech', 'automation', 'robot',
-        'robotics', 'iot', 'internet of things', 'cloud', 'mobile', 'web',
-        'api', 'interface', 'user interface', 'ui', 'ux', 'user experience',
-        'model', 'prediction', 'classification', 'segmentation', 'detection',
-        'monitoring', 'sensor', 'wearable', 'device', 'hardware', 'computing',
-        'algorithm', 'code', 'programming', 'framework', 'toolkit', 'library'
-    ]
-    
-    # Combine text to check
-    text_to_check = (title + ' ' + text).lower()
-    
-    # Check categories if provided
+# ── Scoring-based relevance check ──────────────────────────────────────────
+# Instead of "any keyword matches → pass", we require a minimum SCORE from
+# BOTH the healthcare bucket AND the software bucket. Single generic words
+# like "health", "data", "model" are removed; only compound/specific phrases
+# and strong single terms are kept.
+
+# High-value healthcare phrases (each scores 2 points)
+HEALTHCARE_PHRASES = [
+    'electronic health record', 'electronic medical record', 'ehr', 'emr',
+    'clinical decision support', 'clinical trial', 'patient outcome',
+    'medical imaging', 'disease prediction', 'diagnostic accuracy',
+    'telemedicine', 'telehealth', 'precision medicine', 'personalized medicine',
+    'hospital readmission', 'sepsis', 'radiology', 'pathology', 'oncology',
+    'cardiology', 'neurology', 'epidemiology', 'public health surveillance',
+    'drug discovery', 'pharmacovigilance', 'adverse drug', 'patient triage',
+    'medical diagnosis', 'clinical outcome', 'biomedical', 'bioinformatics',
+    'genomics', 'medical record', 'health informatics', 'clinical informatics',
+]
+
+# High-value software/AI phrases (each scores 2 points)
+SOFTWARE_PHRASES = [
+    'machine learning', 'deep learning', 'neural network', 'convolutional neural',
+    'random forest', 'support vector machine', 'natural language processing',
+    'large language model', 'transformer model', 'federated learning',
+    'computer vision', 'image segmentation', 'object detection',
+    'predictive model', 'classification model', 'regression model',
+    'decision tree', 'gradient boosting', 'xgboost', 'reinforcement learning',
+    'knowledge graph', 'data pipeline', 'data warehouse', 'real-time analytics',
+    'clinical nlp', 'medical nlp', 'medical image analysis',
+    'artificial intelligence', 'explainable ai', 'xai',
+]
+
+# Weaker single-word signals (each scores 1 point) — need multiples to matter
+HEALTHCARE_SINGLE = [
+    'patient', 'clinical', 'diagnosis', 'treatment', 'physician',
+    'hospital', 'disease', 'symptom', 'therapy', 'medication',
+    'vaccine', 'surgical', 'chronic', 'acute', 'mortality',
+]
+
+SOFTWARE_SINGLE = [
+    'algorithm', 'dataset', 'benchmark', 'inference', 'training',
+    'classifier', 'accuracy', 'precision', 'recall', 'f1-score',
+    'automation', 'pipeline', 'framework', 'deployment', 'model',
+]
+
+# Minimum scores required (moderate strictness)
+MIN_HEALTHCARE_SCORE = 3   # e.g. one phrase (2) + one single word (1)
+MIN_SOFTWARE_SCORE   = 3
+
+
+def score_text(text: str, phrases: list, singles: list) -> int:
+    """Return a relevance score for one bucket (healthcare or software)."""
+    score = 0
+    for phrase in phrases:
+        if phrase in text:
+            score += 2
+    for word in singles:
+        # Use word-boundary-like check: surrounded by non-alpha chars
+        if f' {word} ' in text or text.startswith(word + ' ') or text.endswith(' ' + word):
+            score += 1
+    return score
+
+
+def is_healthcare_software_related(text: str, title: str, categories=None) -> bool:
+    """
+    Returns True only when BOTH the healthcare score AND the software score
+    meet their minimum thresholds.  Uses compound phrases as primary signal
+    to avoid false positives from generic single words.
+    """
+    combined = (title + ' ' + text).lower()
     if categories:
-        categories_text = ' '.join(categories).lower()
-        text_to_check += ' ' + categories_text
-    
-    # Check for healthcare keywords
-    has_healthcare = any(keyword in text_to_check for keyword in healthcare_keywords)
-    
-    # Check for software keywords
-    has_software = any(keyword in text_to_check for keyword in software_keywords)
-    
-    # Return True only if BOTH healthcare AND software are present
-    return has_healthcare and has_software
+        combined += ' ' + ' '.join(categories).lower()
+
+    h_score = score_text(combined, HEALTHCARE_PHRASES, HEALTHCARE_SINGLE)
+    s_score = score_text(combined, SOFTWARE_PHRASES,   SOFTWARE_SINGLE)
+
+    return h_score >= MIN_HEALTHCARE_SCORE and s_score >= MIN_SOFTWARE_SCORE
+
+
+# ── Wikipedia routes ────────────────────────────────────────────────────────
 
 @app.route('/import/wikipedia', methods=['POST'])
 @login_required
 def import_wikipedia():
-    """Import healthcare-software combination articles from Wikipedia"""
+    """Import healthcare-software articles from Wikipedia (fixed filtering)."""
     search_query = request.form.get('search_query')
-    domain = request.form.get('domain', 'healthcare_software')
-    
+
     if not search_query:
         flash('Please enter a search query')
         return redirect(url_for('dashboard'))
-    
+
     try:
-        # Search for more articles to increase chances of finding healthcare-software content
-        search_results = wikipedia.search(search_query, results=10)
-        
+        search_results = wikipedia.search(search_query, results=15)  # wider net
+
         if not search_results:
             flash(f'No Wikipedia articles found for "{search_query}"')
             return redirect(url_for('dashboard'))
-        
+
         imported_articles = []
-        
-        # Loop through search results to find healthcare-software related articles
+
         for article_title in search_results:
             try:
-                # Get the page content
                 page = wikipedia.page(article_title, auto_suggest=False)
                 content = page.content
-                
-                # Check if article is healthcare-software related
-                if is_healthcare_software_related(content, article_title, page.categories):
-                    # Create a filename
-                    safe_title = re.sub(r'[^\w\s-]', '', article_title).strip().replace(' ', '_')
-                    filename = secure_filename(f"{current_user.id}_{datetime.now().timestamp()}_{safe_title}.txt")
-                    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                    
-                    # Save content to file
-                    with open(filepath, 'w', encoding='utf-8') as f:
-                        f.write(f"Title: {article_title}\n\n")
-                        f.write(f"URL: {page.url}\n\n")
-                        f.write(f"Categories: {', '.join(page.categories[:10])}\n\n")
-                        f.write("=== HEALTHCARE-SOFTWARE CONTENT ===\n\n")
-                        f.write(content)
-                    
-                    # Create dataset record
-                    dataset = Dataset(
-                        name=f"Wikipedia (Healthcare-Software): {article_title}",
-                        domain='healthcare_software',
-                        filename=filename,
-                        user_id=current_user.id,
-                        source_type='wikipedia',
-                        source_url=page.url
-                    )
-                    db.session.add(dataset)
-                    db.session.commit()
-                    
-                    # Process the dataset
-                    process_dataset(dataset.id, filepath)
-                    
-                    imported_articles.append(article_title)
-                    
-                    # Stop after finding 3 relevant articles
-                    if len(imported_articles) >= 3:
-                        break
-                
-                # Small delay to be respectful to Wikipedia
+
+                if not is_healthcare_software_related(content, article_title, page.categories):
+                    print(f"[SKIP] '{article_title}' — does not meet healthcare-software threshold")
+                    sleep(0.3)
+                    continue
+
+                safe_title = re.sub(r'[^\w\s-]', '', article_title).strip().replace(' ', '_')
+                filename = secure_filename(
+                    f"{current_user.id}_{datetime.now().timestamp()}_{safe_title}.txt"
+                )
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+
+                with open(filepath, 'w', encoding='utf-8') as f:
+                    f.write(f"Title: {article_title}\n\n")
+                    f.write(f"URL: {page.url}\n\n")
+                    f.write(f"Categories: {', '.join(page.categories[:10])}\n\n")
+                    f.write("=== HEALTHCARE-SOFTWARE CONTENT ===\n\n")
+                    f.write(content)
+
+                dataset = Dataset(
+                    name=f"Wikipedia (Healthcare-Software): {article_title}",
+                    domain='healthcare_software',
+                    filename=filename,
+                    user_id=current_user.id,
+                    source_type='wikipedia',
+                    source_url=page.url
+                )
+                db.session.add(dataset)
+                db.session.commit()
+                process_dataset(dataset.id, filepath)
+
+                imported_articles.append(article_title)
+
+                if len(imported_articles) >= 3:
+                    break
+
                 sleep(0.5)
-                
+
             except Exception as e:
-                print(f"Error checking/importing {article_title}: {e}")
+                print(f"Error checking/importing '{article_title}': {e}")
                 continue
-        
+
         if imported_articles:
-            flash(f'Successfully imported {len(imported_articles)} healthcare-software combination articles: {", ".join(imported_articles)}')
+            flash(
+                f'Successfully imported {len(imported_articles)} healthcare-software articles: '
+                f'{", ".join(imported_articles)}'
+            )
         else:
-            flash(f'No healthcare-software combination articles found for "{search_query}". Try adding terms like "software", "AI", or "digital health" to your search.')
-        
+            flash(
+                f'No qualifying healthcare-software articles found for "{search_query}". '
+                f'Try queries like "clinical NLP", "medical image segmentation", '
+                f'"health informatics AI", or "EHR machine learning".'
+            )
+
     except wikipedia.exceptions.DisambiguationError as e:
-        # Handle disambiguation pages
-        options = e.options[:5]
-        flash(f'Disambiguation error. Did you mean one of: {", ".join(options)}?')
+        flash(f'Disambiguation error. Did you mean: {", ".join(e.options[:5])}?')
     except wikipedia.exceptions.PageError:
         flash(f'Wikipedia page not found for "{search_query}"')
     except Exception as e:
         flash(f'Error importing Wikipedia article: {str(e)}')
-    
+
     return redirect(url_for('dashboard'))
+
 
 @app.route('/import/wikipedia/advanced', methods=['POST'])
 @login_required
 def import_wikipedia_advanced():
-    """Advanced Wikipedia import with healthcare-software filtering"""
-    query = request.form.get('query')
-    domain = request.form.get('domain', 'healthcare_software')
-    limit = int(request.form.get('limit', 5))
-    
+    """Advanced Wikipedia import with improved healthcare-software filtering."""
+    query  = request.form.get('query')
+    limit  = int(request.form.get('limit', 5))
+
     if not query:
         flash('Please enter a search query')
         return redirect(url_for('dashboard'))
-    
+
     try:
-        # Search for more articles to ensure we find relevant ones
-        search_results = wikipedia.search(query, results=limit * 2)
-        
+        search_results = wikipedia.search(query, results=limit * 3)  # wider net
+
         if not search_results:
             flash(f'No Wikipedia articles found for "{query}"')
             return redirect(url_for('dashboard'))
-        
+
         imported_count = 0
-        
+
         for article_title in search_results:
             try:
-                # Get the page content
-                page = wikipedia.page(article_title, auto_suggest=False)
+                page    = wikipedia.page(article_title, auto_suggest=False)
                 content = page.content
-                
-                # Check if article is healthcare-software related
-                if is_healthcare_software_related(content, article_title, page.categories):
-                    # Create a filename
-                    safe_title = re.sub(r'[^\w\s-]', '', article_title).strip().replace(' ', '_')
-                    filename = secure_filename(f"{current_user.id}_{datetime.now().timestamp()}_{safe_title}.txt")
-                    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                    
-                    # Save content to file with enhanced metadata
-                    with open(filepath, 'w', encoding='utf-8') as f:
-                        f.write(f"Title: {article_title}\n\n")
-                        f.write(f"URL: {page.url}\n\n")
-                        f.write(f"Categories: {', '.join(page.categories[:10])}\n\n")
-                        f.write("=== HEALTHCARE-SOFTWARE CONTENT ===\n\n")
-                        f.write(content)
-                    
-                    # Create dataset record
-                    dataset = Dataset(
-                        name=f"Wikipedia (Healthcare-Software): {article_title}",
-                        domain='healthcare_software',
-                        filename=filename,
-                        user_id=current_user.id,
-                        source_type='wikipedia',
-                        source_url=page.url
-                    )
-                    db.session.add(dataset)
-                    db.session.commit()
-                    
-                    # Process the dataset
-                    process_dataset(dataset.id, filepath)
-                    
-                    imported_count += 1
-                    
-                    # Stop when we've reached the desired limit
-                    if imported_count >= limit:
-                        break
-                
-                # Small delay to be respectful to Wikipedia
+
+                if not is_healthcare_software_related(content, article_title, page.categories):
+                    print(f"[SKIP] '{article_title}' — does not meet threshold")
+                    sleep(0.3)
+                    continue
+
+                safe_title = re.sub(r'[^\w\s-]', '', article_title).strip().replace(' ', '_')
+                filename   = secure_filename(
+                    f"{current_user.id}_{datetime.now().timestamp()}_{safe_title}.txt"
+                )
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+
+                with open(filepath, 'w', encoding='utf-8') as f:
+                    f.write(f"Title: {article_title}\n\n")
+                    f.write(f"URL: {page.url}\n\n")
+                    f.write(f"Categories: {', '.join(page.categories[:10])}\n\n")
+                    f.write("=== HEALTHCARE-SOFTWARE CONTENT ===\n\n")
+                    f.write(content)
+
+                dataset = Dataset(
+                    name=f"Wikipedia (Healthcare-Software): {article_title}",
+                    domain='healthcare_software',
+                    filename=filename,
+                    user_id=current_user.id,
+                    source_type='wikipedia',
+                    source_url=page.url
+                )
+                db.session.add(dataset)
+                db.session.commit()
+                process_dataset(dataset.id, filepath)
+
+                imported_count += 1
+                if imported_count >= limit:
+                    break
+
                 sleep(0.5)
-                
+
             except Exception as e:
-                print(f"Error importing {article_title}: {e}")
+                print(f"Error importing '{article_title}': {e}")
                 continue
-        
+
         if imported_count > 0:
-            flash(f'Successfully imported {imported_count} healthcare-software combination Wikipedia articles')
+            flash(f'Successfully imported {imported_count} healthcare-software Wikipedia articles')
         else:
-            flash(f'No healthcare-software combination articles found for "{query}". Try adding terms like "software", "AI", "digital health", or "informatics" to your search.')
-        
+            flash(
+                f'No qualifying articles found for "{query}". '
+                f'Try "health informatics", "clinical AI", or "medical NLP".'
+            )
+
     except Exception as e:
         flash(f'Error in advanced Wikipedia import: {str(e)}')
-    
+
     return redirect(url_for('dashboard'))
+
+
+# ── arXiv routes ────────────────────────────────────────────────────────────
+
+# Tightly scoped arXiv categories for healthcare + AI/ML
+_ARXIV_HEALTH_AI_CATS = [
+    'cs.LG',          # Machine Learning
+    'cs.AI',          # Artificial Intelligence
+    'cs.CY',          # Computers and Society (health informatics)
+    'cs.HC',          # Human-Computer Interaction
+    'eess.IV',        # Image and Video Processing (medical imaging)
+    'q-bio.QM',       # Quantitative Methods / bioinformatics
+    'stat.AP',        # Statistics Applications (biostatistics)
+    'physics.med-ph', # Medical Physics
+]
+
+# arXiv query: must mention both a health term AND an AI/ML term
+# Using AND logic so both must appear — much stricter than the original OR
+_ARXIV_HEALTH_FILTER  = '(healthcare OR "electronic health record" OR "clinical trial" OR "medical imaging" OR "patient outcome" OR "disease prediction" OR "biomedical" OR "health informatics")'
+_ARXIV_SOFTWARE_FILTER = '(\"machine learning\" OR \"deep learning\" OR \"neural network\" OR \"natural language processing\" OR \"computer vision\" OR \"federated learning\" OR \"large language model\")'
+
+
+def _build_arxiv_query(user_query: str, category: str = 'all') -> str:
+    """Build a tight arXiv query that requires both health AND AI/ML terms."""
+    cat_filter = (
+        f'cat:{category}'
+        if category and category != 'all'
+        else '(' + ' OR '.join(f'cat:{c}' for c in _ARXIV_HEALTH_AI_CATS) + ')'
+    )
+    return (
+        f'({cat_filter}) AND ({user_query}) '
+        f'AND {_ARXIV_HEALTH_FILTER} AND {_ARXIV_SOFTWARE_FILTER}'
+    )
+
+
+def _arxiv_paper_passes(result) -> bool:
+    """Secondary check: run scoring filter on title + abstract."""
+    combined = (result.title + ' ' + result.summary).lower()
+    h = score_text(combined, HEALTHCARE_PHRASES, HEALTHCARE_SINGLE)
+    s = score_text(combined, SOFTWARE_PHRASES,   SOFTWARE_SINGLE)
+    return h >= MIN_HEALTHCARE_SCORE and s >= MIN_SOFTWARE_SCORE
+
+
+def _save_arxiv_paper(result, label: str = 'Healthcare-Software') -> None:
+    """Persist one arXiv result to disk + DB and trigger processing."""
+    content  = f"Title: {result.title}\n\n"
+    content += f"Authors: {', '.join(a.name for a in result.authors)}\n\n"
+    content += f"Published: {result.published}\n\n"
+    content += f"Updated: {result.updated}\n\n"
+    content += f"Categories: {', '.join(result.categories)}\n\n"
+    content += f"Primary Category: {result.primary_category}\n\n"
+    if result.doi:          content += f"DOI: {result.doi}\n\n"
+    if result.journal_ref:  content += f"Journal Reference: {result.journal_ref}\n\n"
+    if result.comment:      content += f"Comment: {result.comment}\n\n"
+    content += f"=== {label.upper()} PAPER ===\n\nAbstract:\n{result.summary}"
+
+    safe_title = re.sub(r'[^\w\s-]', '', result.title)[:100].strip().replace(' ', '_')
+    filename   = secure_filename(
+        f"{current_user.id}_{datetime.now().timestamp()}_healthcare_software_{safe_title}.txt"
+    )
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+
+    with open(filepath, 'w', encoding='utf-8') as f:
+        f.write(content)
+
+    dataset = Dataset(
+        name=f"arXiv ({label}): {result.title[:100]}",
+        domain='healthcare_software',
+        filename=filename,
+        user_id=current_user.id,
+        source_type='arxiv',
+        source_url=result.entry_id
+    )
+    db.session.add(dataset)
+    db.session.commit()
+    process_dataset(dataset.id, filepath)
+
 
 @app.route('/import/arxiv', methods=['POST'])
 @login_required
 def import_arxiv():
-    """Import healthcare-software combination papers from arXiv"""
+    """Import healthcare-software papers from arXiv (fixed filtering)."""
     search_query = request.form.get('search_query')
-    max_results = int(request.form.get('max_results', 10))
-    
+    max_results  = int(request.form.get('max_results', 10))
+
     if not search_query:
         flash('Please enter a search query')
         return redirect(url_for('dashboard'))
-    
+
     try:
-        # Enhance search query to focus on healthcare-software topics
-        enhanced_query = f"({search_query}) AND (healthcare OR medical OR clinical OR health) AND (software OR AI OR algorithm OR machine learning OR digital)"
-        
-        # Search arXiv
+        query  = _build_arxiv_query(search_query)
         search = arxiv.Search(
-            query=enhanced_query,
-            max_results=max_results * 2,  # Get more results to filter
+            query=query,
+            max_results=max_results * 2,   # fetch extra for secondary filter
             sort_by=arxiv.SortCriterion.Relevance
         )
-        
+
         imported_count = 0
-        
+
         for result in search.results():
-            # Check if paper is healthcare-software related
-            title_lower = result.title.lower()
-            abstract_lower = result.summary.lower()
-            categories_text = ' '.join(result.categories).lower()
-            
-            # Define healthcare and software keywords for arXiv
-            healthcare_terms = ['healthcare', 'medical', 'clinical', 'health', 'patient', 'disease', 'diagnosis', 'treatment']
-            software_terms = ['software', 'algorithm', 'ai', 'machine learning', 'deep learning', 'neural', 'digital', 'informatics', 'computer']
-            
-            has_healthcare = any(term in title_lower or term in abstract_lower or term in categories_text for term in healthcare_terms)
-            has_software = any(term in title_lower or term in abstract_lower or term in categories_text for term in software_terms)
-            
-            if has_healthcare and has_software:
-                # Create content from paper metadata and summary
-                content = f"Title: {result.title}\n\n"
-                content += f"Authors: {', '.join(author.name for author in result.authors)}\n\n"
-                content += f"Published: {result.published}\n\n"
-                content += f"Updated: {result.updated}\n\n"
-                content += f"Categories: {', '.join(result.categories)}\n\n"
-                content += f"DOI: {result.doi}\n\n" if result.doi else ""
-                content += f"Journal Reference: {result.journal_ref}\n\n" if result.journal_ref else ""
-                content += "=== HEALTHCARE-SOFTWARE PAPER ===\n\n"
-                content += "Abstract:\n"
-                content += result.summary
-                
-                # Create a filename
-                safe_title = re.sub(r'[^\w\s-]', '', result.title)[:100].strip().replace(' ', '_')
-                filename = secure_filename(f"{current_user.id}_{datetime.now().timestamp()}_healthcare_software_{safe_title}.txt")
-                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                
-                # Save content to file
-                with open(filepath, 'w', encoding='utf-8') as f:
-                    f.write(content)
-                
-                # Create dataset record
-                dataset = Dataset(
-                    name=f"arXiv (Healthcare-Software): {result.title[:100]}",
-                    domain='healthcare_software',
-                    filename=filename,
-                    user_id=current_user.id,
-                    source_type='arxiv',
-                    source_url=result.entry_id
-                )
-                db.session.add(dataset)
-                db.session.commit()
-                
-                # Process the dataset
-                process_dataset(dataset.id, filepath)
-                
-                imported_count += 1
-                
-                if imported_count >= max_results:
-                    break
-        
+            if not _arxiv_paper_passes(result):
+                print(f"[SKIP] arXiv paper '{result.title}' — score too low")
+                continue
+
+            _save_arxiv_paper(result)
+            imported_count += 1
+            if imported_count >= max_results:
+                break
+
         if imported_count > 0:
-            flash(f'Successfully imported {imported_count} healthcare-software combination arXiv papers')
+            flash(f'Successfully imported {imported_count} healthcare-software arXiv papers')
         else:
-            flash(f'No healthcare-software combination papers found for "{search_query}". Try adding "medical AI", "health informatics", or "clinical software" to your search.')
-        
+            flash(
+                f'No qualifying papers found for "{search_query}". '
+                f'Try "clinical NLP EHR", "medical image deep learning", '
+                f'or "health informatics prediction".'
+            )
+
     except Exception as e:
         flash(f'Error importing arXiv papers: {str(e)}')
-    
+
     return redirect(url_for('dashboard'))
+
 
 @app.route('/import/arxiv/advanced', methods=['POST'])
 @login_required
 def import_arxiv_advanced():
-    """Advanced arXiv import with healthcare-software focus"""
-    query = request.form.get('query')
-    category = request.form.get('category', 'all')
+    """Advanced arXiv import with healthcare-software focus (fixed filtering)."""
+    query       = request.form.get('query')
+    category    = request.form.get('category', 'all')
     max_results = int(request.form.get('max_results', 5))
-    sort_by = request.form.get('sort_by', 'relevance')
-    
+    sort_by     = request.form.get('sort_by', 'relevance')
+
     if not query:
         flash('Please enter a search query')
         return redirect(url_for('dashboard'))
-    
+
     try:
-        # Focus on healthcare-software related arXiv categories
-        healthcare_software_categories = [
-            'cs.LG',     # Machine Learning
-            'cs.AI',     # Artificial Intelligence
-            'cs.CY',     # Computers and Society (includes health informatics)
-            'cs.HC',     # Human-Computer Interaction
-            'q-bio.QM',  # Quantitative Methods (bioinformatics, medical)
-            'eess.IV',   # Image and Video Processing (medical imaging)
-            'stat.AP',   # Applications (biostatistics)
-            'physics.med-ph'  # Medical Physics
-        ]
-        
-        # Build search query with healthcare-software focus
-        if category and category != 'all':
-            search_query = f"cat:{category} AND ({query})"
-        else:
-            # If no specific category, search across healthcare-software categories
-            category_query = ' OR '.join([f'cat:{cat}' for cat in healthcare_software_categories])
-            search_query = f"({category_query}) AND ({query})"
-        
-        # Enhance with healthcare-software keywords
-        search_query = f"({search_query}) AND (healthcare OR medical OR clinical OR health) AND (software OR AI OR algorithm OR machine learning)"
-        
-        # Map sort option
         sort_map = {
-            'relevance': arxiv.SortCriterion.Relevance,
-            'submittedDate': arxiv.SortCriterion.SubmittedDate,
-            'lastUpdatedDate': arxiv.SortCriterion.LastUpdatedDate
+            'relevance':       arxiv.SortCriterion.Relevance,
+            'submittedDate':   arxiv.SortCriterion.SubmittedDate,
+            'lastUpdatedDate': arxiv.SortCriterion.LastUpdatedDate,
         }
-        
-        # Search arXiv
+
         search = arxiv.Search(
-            query=search_query,
+            query=_build_arxiv_query(query, category),
             max_results=max_results,
             sort_by=sort_map.get(sort_by, arxiv.SortCriterion.Relevance)
         )
-        
+
         imported_count = 0
-        
+
         for result in search.results():
-            # Create content from paper
-            content = f"Title: {result.title}\n\n"
-            content += f"Authors: {', '.join(author.name for author in result.authors)}\n\n"
-            content += f"Published: {result.published}\n\n"
-            content += f"Updated: {result.updated}\n\n"
-            content += f"Categories: {', '.join(result.categories)}\n\n"
-            content += f"Primary Category: {result.primary_category}\n\n"
-            content += f"DOI: {result.doi}\n\n" if result.doi else ""
-            content += f"Journal Reference: {result.journal_ref}\n\n" if result.journal_ref else ""
-            content += f"Comment: {result.comment}\n\n" if result.comment else ""
-            content += "=== HEALTHCARE-SOFTWARE RESEARCH ===\n\n"
-            content += "Abstract:\n"
-            content += result.summary
-            
-            # Create filename
-            safe_title = re.sub(r'[^\w\s-]', '', result.title)[:100].strip().replace(' ', '_')
-            filename = secure_filename(f"{current_user.id}_{datetime.now().timestamp()}_healthcare_software_{safe_title}.txt")
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            
-            # Save content
-            with open(filepath, 'w', encoding='utf-8') as f:
-                f.write(content)
-            
-            # Create dataset record
-            dataset = Dataset(
-                name=f"arXiv (Healthcare-Software): {result.title[:100]}",
-                domain='healthcare_software',
-                filename=filename,
-                user_id=current_user.id,
-                source_type='arxiv',
-                source_url=result.entry_id
-            )
-            db.session.add(dataset)
-            db.session.commit()
-            
-            # Process the dataset
-            process_dataset(dataset.id, filepath)
-            
+            if not _arxiv_paper_passes(result):
+                print(f"[SKIP] arXiv paper '{result.title}' — score too low")
+                continue
+
+            _save_arxiv_paper(result, label='Healthcare-Software Research')
             imported_count += 1
-        
+
         if imported_count > 0:
-            flash(f'Successfully imported {imported_count} healthcare-software combination arXiv papers')
+            flash(f'Successfully imported {imported_count} healthcare-software arXiv papers')
         else:
-            flash(f'No healthcare-software combination papers found. Try different keywords or check your search query.')
-        
+            flash(
+                'No qualifying papers found. '
+                'Try "EHR deep learning", "clinical decision support ML", '
+                'or "biomedical NLP".'
+            )
+
     except Exception as e:
         flash(f'Error in advanced arXiv import: {str(e)}')
-    
+
     return redirect(url_for('dashboard'))
 # ============================================
 # 6. MULTI-FILE UPLOAD ROUTE
