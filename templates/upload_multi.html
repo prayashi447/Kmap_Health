@@ -12,16 +12,16 @@
   }
 
   /* ── Animated background ── */
-   body::before {
-        content: '';
-        position: fixed;
-        inset: 0;
-        background-image: url("{{ url_for('static', filename='img/Background2.webp') }}");
-        background-size: cover;
-        background-position: center;
-        z-index: 0;
-        opacity: 0.85;
-    }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("{{ url_for('static', filename='img/Background2.webp') }}");
+    background-size: cover;
+    background-position: center;
+    z-index: 0;
+    opacity: 0.85;
+  }
 
   body::after {
     content: '';
@@ -34,15 +34,15 @@
     pointer-events: none;
     z-index: 0;
   }
-  .upload-wrapper {
+
+  /* ── Main Container Styling ── */
+  .row.justify-content-center {
     position: relative;
     z-index: 1;
-    display: flex;
-    justify-content: center;
-    padding: 1rem 1rem 3rem;
-    animation: fadeSlideUp .55s ease both;
+    padding: 2rem 1rem;
   }
 
+  /* ── Upload Card ── */
   .upload-card {
     width: 100%;
     max-width: 640px;
@@ -52,6 +52,7 @@
     backdrop-filter: blur(24px);
     box-shadow: 0 8px 48px rgba(2, 11, 26, 0.55);
     overflow: hidden;
+    margin: 0 auto;
   }
 
   /* ── Card Header ── */
@@ -65,11 +66,14 @@
   }
 
   .upload-header-icon {
-    width: 44px; height: 44px;
+    width: 44px;
+    height: 44px;
     border-radius: 12px;
     background: rgba(26, 110, 245, 0.18);
     border: 1px solid rgba(77, 147, 255, 0.25);
-    display: flex; align-items: center; justify-content: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: 1.25rem;
     color: #4d93ff;
     flex-shrink: 0;
@@ -140,192 +144,168 @@
     color: #e8f2ff;
   }
 
-  /* ── File Drop Zone ── */
-  .file-drop-zone {
+  /* ── File Input Styling ── */
+  .file-input-wrapper {
     position: relative;
-    border: 2px dashed rgba(77, 147, 255, 0.28);
-    border-radius: 16px;
-    padding: 2rem 1.5rem;
-    text-align: center;
+    width: 100%;
+  }
+
+  .file-input-label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: rgba(2, 11, 26, 0.7);
+    border: 1px solid rgba(77, 147, 255, 0.22);
+    border-radius: 12px;
     cursor: pointer;
-    transition: all .25s ease;
-    background: rgba(2, 11, 26, 0.45);
+    transition: all 0.2s ease;
   }
 
-  .file-drop-zone:hover,
-  .file-drop-zone.drag-over {
-    border-color: #4d93ff;
-    background: rgba(26, 110, 245, 0.08);
-    box-shadow: 0 0 0 4px rgba(77, 147, 255, 0.08);
+  .file-input-label:hover {
+    border-color: rgba(77, 147, 255, 0.4);
+    background: rgba(2, 11, 26, 0.8);
   }
 
-  .file-drop-zone input[type="file"] {
+  .file-input-icon {
+    color: #4d93ff;
+    font-size: 1.25rem;
+  }
+
+  .file-input-text {
+    color: #e8f2ff;
+    font-size: 0.88rem;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .file-input-hidden {
     position: absolute;
-    inset: 0;
     opacity: 0;
-    cursor: pointer;
     width: 100%;
     height: 100%;
+    top: 0;
+    left: 0;
+    cursor: pointer;
   }
 
-  .drop-icon {
-    width: 52px; height: 52px;
-    border-radius: 14px;
-    background: rgba(26, 110, 245, 0.15);
-    border: 1px solid rgba(77, 147, 255, 0.2);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.4rem;
+  /* ── File Row Styling ── */
+  .file-row {
+    background: rgba(2, 11, 26, 0.4);
+    border-radius: 16px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    transition: all 0.2s ease;
+  }
+
+  .file-row:hover {
+    background: rgba(2, 11, 26, 0.6);
+  }
+
+  /* ── Remove Button ── */
+  .remove-file {
+    background: rgba(220, 53, 69, 0.2);
+    border: 1px solid rgba(220, 53, 69, 0.3);
+    color: #ff6b7c;
+    border-radius: 10px;
+    padding: 0.5rem;
+    transition: all 0.2s ease;
+  }
+
+  .remove-file:hover {
+    background: rgba(220, 53, 69, 0.3);
+    border-color: rgba(220, 53, 69, 0.5);
+    color: #ff8a9a;
+  }
+
+  /* ── Add Button ── */
+  .add-more-btn {
+    background: rgba(77, 147, 255, 0.12);
+    border: 1px solid rgba(77, 147, 255, 0.25);
+    border-radius: 12px;
+    padding: 0.7rem;
     color: #4d93ff;
-    margin: 0 auto .9rem;
-    transition: transform .2s, background .2s;
-  }
-
-  .file-drop-zone:hover .drop-icon {
-    transform: translateY(-3px);
-    background: rgba(26, 110, 245, 0.25);
-  }
-
-  .drop-title {
     font-family: 'Syne', sans-serif;
-    font-size: .95rem;
-    font-weight: 700;
-    color: #e8f2ff;
-    margin-bottom: .3rem;
-  }
-
-  .drop-sub {
-    font-size: .8rem;
-    color: rgba(179, 210, 255, 0.55);
-  }
-
-  .drop-sub span {
-    color: #4d93ff;
+    font-size: 0.85rem;
     font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    transition: all 0.2s ease;
   }
 
-  .file-chosen {
-    display: none;
-    margin-top: .85rem;
-    align-items: center;
-    justify-content: center;
-    gap: .5rem;
-    background: rgba(10, 245, 224, 0.1);
-    border: 1px solid rgba(10, 245, 224, 0.25);
-    border-radius: 8px;
-    padding: .45rem .9rem;
-    font-size: .82rem;
-    color: #0af5e0;
-    font-weight: 600;
-  }
-
-  .file-chosen i { font-size: .88rem; }
-
-  /* ── Info Box ── */
-  .info-box {
-    background: rgba(26, 110, 245, 0.08);
-    border: 1px solid rgba(77, 147, 255, 0.2);
-    border-left: 3px solid #4d93ff;
-    border-radius: 14px;
-    padding: 1.1rem 1.25rem;
-  }
-
-  .info-box-title {
-    font-family: 'Syne', sans-serif;
-    font-size: .8rem;
-    font-weight: 700;
-    letter-spacing: .05em;
+  .add-more-btn:hover {
+    background: rgba(77, 147, 255, 0.2);
+    border-color: rgba(77, 147, 255, 0.4);
     color: #80b4ff;
-    display: flex;
-    align-items: center;
-    gap: .4rem;
-    margin-bottom: .75rem;
-  }
-
-  .info-steps {
-    list-style: none;
-    padding: 0; margin: 0;
-    display: flex;
-    flex-direction: column;
-    gap: .5rem;
-  }
-
-  .info-steps li {
-    display: flex;
-    align-items: center;
-    gap: .75rem;
-    font-size: .83rem;
-    color: rgba(179, 210, 255, 0.8);
-  }
-
-  .step-num {
-    width: 22px; height: 22px;
-    border-radius: 6px;
-    background: rgba(26, 110, 245, 0.25);
-    border: 1px solid rgba(77, 147, 255, 0.3);
-    display: flex; align-items: center; justify-content: center;
-    font-size: .72rem;
-    font-weight: 700;
-    color: #4d93ff;
-    flex-shrink: 0;
-    font-family: 'Syne', sans-serif;
   }
 
   /* ── Submit Button ── */
-  .btn-upload {
-    width: 100%;
-    background: linear-gradient(135deg, #1048a0, #1a6ef5);
+  .submit-btn {
+    background: linear-gradient(135deg, #2563eb, #1e40af);
     border: none;
-    border-radius: 14px;
-    color: #fff;
+    border-radius: 12px;
+    padding: 0.9rem;
     font-family: 'Syne', sans-serif;
-    font-size: .95rem;
     font-weight: 700;
-    padding: .85rem 1.5rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: .5rem;
-    letter-spacing: .02em;
-    transition: opacity .2s, transform .2s, box-shadow .2s;
-    position: relative;
-    overflow: hidden;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #ffffff;
+    transition: all 0.2s ease;
+    margin-top: 0.5rem;
   }
 
-  .btn-upload::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(255,255,255,.08), transparent);
-    opacity: 0;
-    transition: opacity .2s;
+  .submit-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
   }
 
-  .btn-upload:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 28px rgba(26, 110, 245, 0.4);
+  /* ── Alert Styling ── */
+  .info-alert {
+    background: rgba(77, 147, 255, 0.08);
+    border: 1px solid rgba(77, 147, 255, 0.2);
+    border-radius: 16px;
+    padding: 1rem;
+    color: #b3d2ff;
   }
 
-  .btn-upload:hover::before { opacity: 1; }
-  .btn-upload:active { transform: translateY(0); }
+  .info-alert i {
+    color: #4d93ff;
+    margin-right: 0.5rem;
+  }
 
-  /* ── Animation ── */
-  @keyframes fadeSlideUp {
-    from { opacity: 0; transform: translateY(22px); }
-    to   { opacity: 1; transform: translateY(0); }
+  .info-alert strong {
+    color: #e8f2ff;
+  }
+
+  .info-alert ul {
+    padding-left: 1.5rem;
+    margin-top: 0.5rem;
+  }
+
+  .info-alert li {
+    margin-bottom: 0.25rem;
   }
 </style>
 {% endblock %}
+
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-10">
-        <div class="card">
-            <div class="card-header">
-                <h4 class="mb-0">Upload Multiple Datasets (Cross-Domain)</h4>
+        <div class="upload-card">
+            <div class="upload-header">
+                <div class="upload-header-icon">
+                    <i class="bi bi-diagram-3"></i>
+                </div>
+                <div>
+                    
+                    <p>Upload multiple datasets to discover relationships across domains</p>
+                </div>
             </div>
-            <div class="card-body">
-                <div class="alert alert-info">
-                    <i class="bi bi-info-circle"></i>
+            
+            <div class="upload-body">
+                <div class="info-alert">
+                    <i class="bi bi-info-circle-fill"></i>
                     <strong>How Cross-Domain Knowledge Graph Works:</strong>
                     <ul class="mb-0 mt-2">
                         <li>Upload at least 2 files from different domains</li>
@@ -338,45 +318,57 @@
                 
                 <form method="POST" action="{{ url_for('upload_multi') }}" enctype="multipart/form-data">
                     <div id="file-inputs">
-                        <div class="row mb-3 file-row">
-                            <div class="col-md-6">
-                                <label class="form-label">Select File 1</label>
-                                <input type="file" class="form-control" name="files" accept=".txt,.csv" required>
-                            </div>
-                            <div class="col-md-5">
-                                <label class="form-label">Domain</label>
-                                <select class="form-select" name="domains" required>
-                                    <option value="">Select Domain</option>
-                                    <option value="Healthcare">Healthcare</option>
-                                    <option value="Artificial Intelligence">AI</option>
-                                    <option value="Law">Law</option>
-                                    <option value="Science">Science</option>
-                                    <option value="Technology">Technology</option>
-                                    <option value="Business">Business</option>
-                                    <option value="History">History</option>
-                                    <option value="Literature">Literature</option>
-                                </select>
-                            </div>
-                            <div class="col-md-1">
-                                <label class="form-label">&nbsp;</label>
-                                <button type="button" class="btn btn-danger remove-file" style="display: none;">
-                                    <i class="bi bi-trash"></i>
-                                </button>
+                        <div class="file-row" data-row-id="1">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="field-label">
+                                        <i class="bi bi-file-earmark-text"></i> FILE 1
+                                    </label>
+                                    <div class="file-input-wrapper">
+                                        <div class="file-input-label">
+                                            <i class="bi bi-cloud-upload file-input-icon"></i>
+                                            <span class="file-input-text">Choose file (TXT or CSV)</span>
+                                        </div>
+                                        <input type="file" class="file-input-hidden" name="files" accept=".txt,.csv" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="field-label">
+                                        <i class="bi bi-tag"></i> DOMAIN
+                                    </label>
+                                    <select class="styled-select" name="domains" required>
+                                        <option value="">Select Domain</option>
+                                        <option value="Healthcare">Healthcare</option>
+                                        <option value="Artificial Intelligence">AI</option>
+                                        <option value="Law">Law</option>
+                                        <option value="Science">Science</option>
+                                        <option value="Technology">Technology</option>
+                                        <option value="Business">Business</option>
+                                        <option value="History">History</option>
+                                        <option value="Literature">Literature</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-1">
+                                    <label class="field-label">&nbsp;</label>
+                                    <button type="button" class="btn remove-file w-100" style="display: none;">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
                     
                     <div class="row mb-3">
                         <div class="col-12">
-                            <button type="button" class="btn btn-secondary" id="add-more">
-                                <i class="bi bi-plus-circle"></i> Add Another File
+                            <button type="button" class="btn add-more-btn w-100" id="add-more">
+                                <i class="bi bi-plus-circle"></i> ADD ANOTHER FILE
                             </button>
                         </div>
                     </div>
                 
                     <div class="d-grid">
-                        <button type="submit" class="btn btn-dark w-100">
-                            <i class="bi bi-cloud-upload"></i> Upload & Process Cross-Domain
+                        <button type="submit" class="btn submit-btn">
+                            <i class="bi bi-cloud-upload"></i> PROCESS CROSS-DOMAIN
                         </button>
                     </div>
                 </form>
@@ -389,40 +381,82 @@
 <script>
 let fileCount = 1;
 
+// Function to handle file selection and update label
+function handleFileSelection(inputElement) {
+    const wrapper = inputElement.closest('.file-input-wrapper');
+    const labelSpan = wrapper.querySelector('.file-input-text');
+    
+    if (inputElement.files && inputElement.files[0]) {
+        labelSpan.textContent = inputElement.files[0].name;
+    } else {
+        labelSpan.textContent = 'Choose file (TXT or CSV)';
+    }
+}
+
+// Add event listeners to existing file inputs
+document.querySelectorAll('.file-input-hidden').forEach(input => {
+    input.addEventListener('change', function() {
+        handleFileSelection(this);
+    });
+});
+
+// Add more file rows
 document.getElementById('add-more').addEventListener('click', function() {
     fileCount++;
+    const newRowId = fileCount;
+    
     const template = `
-        <div class="row mb-3 file-row">
-            <div class="col-md-6">
-                <label class="form-label">Select File ${fileCount}</label>
-                <input type="file" class="form-control" name="files" accept=".txt,.csv" required>
-            </div>
-            <div class="col-md-5">
-                <label class="form-label">Domain</label>
-                <select class="form-select" name="domains" required>
-                    <option value="">Select Domain</option>
-                    <option value="Healthcare">Healthcare</option>
-                    <option value="Artificial Intelligence">AI</option>
-                    <option value="Law">Law</option>
-                    <option value="Science">Science</option>
-                    <option value="Technology">Technology</option>
-                    <option value="Business">Business</option>
-                    <option value="History">History</option>
-                    <option value="Literature">Literature</option>
-                </select>
-            </div>
-            <div class="col-md-1">
-                <label class="form-label">&nbsp;</label>
-                <button type="button" class="btn btn-danger remove-file">
-                    <i class="bi bi-trash"></i>
-                </button>
+        <div class="file-row" data-row-id="${newRowId}">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="field-label">
+                        <i class="bi bi-file-earmark-text"></i> FILE ${fileCount}
+                    </label>
+                    <div class="file-input-wrapper">
+                        <div class="file-input-label">
+                            <i class="bi bi-cloud-upload file-input-icon"></i>
+                            <span class="file-input-text">Choose file (TXT or CSV)</span>
+                        </div>
+                        <input type="file" class="file-input-hidden" name="files" accept=".txt,.csv" required>
+                    </div>
+                </div>
+                <div class="col-md-5">
+                    <label class="field-label">
+                        <i class="bi bi-tag"></i> DOMAIN
+                    </label>
+                    <select class="styled-select" name="domains" required>
+                        <option value="">Select Domain</option>
+                        <option value="Healthcare">Healthcare</option>
+                        <option value="Artificial Intelligence">AI</option>
+                        <option value="Law">Law</option>
+                        <option value="Science">Science</option>
+                        <option value="Technology">Technology</option>
+                        <option value="Business">Business</option>
+                        <option value="History">History</option>
+                        <option value="Literature">Literature</option>
+                    </select>
+                </div>
+                <div class="col-md-1">
+                    <label class="field-label">&nbsp;</label>
+                    <button type="button" class="btn remove-file w-100">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
             </div>
         </div>
     `;
     
     document.getElementById('file-inputs').insertAdjacentHTML('beforeend', template);
     
-    // Show remove buttons on all but first file
+    // Add change event listener to the new file input
+    const newFileInput = document.querySelector(`.file-row[data-row-id="${newRowId}"] .file-input-hidden`);
+    if (newFileInput) {
+        newFileInput.addEventListener('change', function() {
+            handleFileSelection(this);
+        });
+    }
+    
+    // Show all remove buttons
     document.querySelectorAll('.remove-file').forEach(btn => {
         btn.style.display = 'block';
     });
@@ -430,13 +464,41 @@ document.getElementById('add-more').addEventListener('click', function() {
 
 // Remove file row
 document.addEventListener('click', function(e) {
-    if (e.target.closest('.remove-file')) {
-        e.target.closest('.file-row').remove();
-        fileCount--;
-        
-        // Hide remove button if only one file left
-        if (document.querySelectorAll('.file-row').length === 1) {
-            document.querySelector('.remove-file').style.display = 'none';
+    const removeBtn = e.target.closest('.remove-file');
+    if (removeBtn) {
+        const fileRow = removeBtn.closest('.file-row');
+        if (fileRow) {
+            fileRow.remove();
+            fileCount--;
+            
+            // Update file labels
+            const rows = document.querySelectorAll('.file-row');
+            rows.forEach((row, idx) => {
+                const label = row.querySelector('.field-label');
+                if (label) {
+                    const fileNumber = idx + 1;
+                    label.innerHTML = `<i class="bi bi-file-earmark-text"></i> FILE ${fileNumber}`;
+                    row.setAttribute('data-row-id', fileNumber);
+                }
+            });
+            
+            // Hide remove button if only one file left
+            if (document.querySelectorAll('.file-row').length === 1) {
+                const firstRemoveBtn = document.querySelector('.remove-file');
+                if (firstRemoveBtn) firstRemoveBtn.style.display = 'none';
+            }
+        }
+    }
+});
+
+// Make file input label clickable to trigger file selection
+document.addEventListener('click', function(e) {
+    const fileLabel = e.target.closest('.file-input-label');
+    if (fileLabel) {
+        const fileInput = fileLabel.parentElement.querySelector('.file-input-hidden');
+        if (fileInput) {
+            e.preventDefault();
+            fileInput.click();
         }
     }
 });

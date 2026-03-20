@@ -461,35 +461,18 @@
       <a href="{{ url_for('upload') }}" class="btn-primary">
         <i class="bi bi-cloud-upload"></i> Upload Dataset
       </a>
-      <a href="{{ url_for('dashboard') }}" class="btn-outline">
-        <i class="bi bi-speedometer2"></i> Dashboard
-      </a>
     </div>
   </div>
 
   <!-- ── Stats Overview ── -->
-  <div class="stats-grid">
+  <br class="stats-grid">
     <div class="stat-card">
       <i class="bi bi-folder stat-bg-icon"></i>
       <div class="stat-value">{{ datasets|length }}</div>
       <div class="stat-label">Total Datasets</div>
     </div>
-    <div class="stat-card">
-      <i class="bi bi-tags stat-bg-icon"></i>
-      <div class="stat-value">{{ stats.total_entities|default(0) }}</div>
-      <div class="stat-label">Total Entities</div>
-    </div>
-    <div class="stat-card">
-      <i class="bi bi-share stat-bg-icon"></i>
-      <div class="stat-value">{{ stats.total_relations|default(0) }}</div>
-      <div class="stat-label">Total Relations</div>
-    </div>
-    <div class="stat-card">
-      <i class="bi bi-diagram-3 stat-bg-icon"></i>
-      <div class="stat-value">{{ stats.cross_domain_datasets|default(0) }}</div>
-      <div class="stat-label">Cross-Domain</div>
-    </div>
-  </div>
+    <br></br>
+
 
   <!-- ── Datasets Table ── -->
   <div class="glass-card">
