@@ -18,7 +18,9 @@ import wikipedia
 import arxiv
 import re
 from time import sleep
-
+from flask import send_file, render_template, abort
+import os
+import mimetypes
 # NLP imports
 from nlp.preprocessing import preprocess_text
 from nlp.ner import extract_entities
@@ -250,64 +252,162 @@ def upload():
             return redirect(url_for('dashboard'))
     
     return render_template('upload.html')
+    
 
+# Alternative more efficient version using SQLAlchemy queries:
+@app.route('/datasets')
+@login_required
+def datasets():
+    # Get current user's datasets
+    datasets = Dataset.query.filter_by(user_id=current_user.id).all()
+    
+    # Efficiently calculate stats using SQLAlchemy queries
+    total_entities = db.session.query(db.func.sum(db.func.length(Dataset.entities))).filter(
+        Dataset.user_id == current_user.id
+    ).scalar() or 0
+    
+    total_relations = db.session.query(db.func.sum(db.func.length(Dataset.relations))).filter(
+        Dataset.user_id == current_user.id
+    ).scalar() or 0
+    
+    # Get datasets with cross-domain relations
+    cross_domain_datasets = Dataset.query.filter(
+        Dataset.user_id == current_user.id,
+        Dataset.relations.any(Relation.relation_type.in_(['same_as', 'related_to']))
+    ).count()
+    
+    stats = {
+        'total_entities': total_entities,
+        'total_relations': total_relations,
+        'cross_domain_datasets': cross_domain_datasets
+    }
+    
+    return render_template('datasets.html', datasets=datasets, stats=stats)
 # ============================================
 # 5. WIKIPEDIA AND ARXIV ROUTES
 # ============================================
 
+# Add this helper function at the top of your file
+def is_healthcare_software_related(text, title, categories=None):
+    """Check if content is related to healthcare AND software/technology"""
+    
+    # Healthcare-related keywords
+    healthcare_keywords = [
+        'healthcare', 'medical', 'clinical', 'health', 'patient', 'hospital',
+        'disease', 'diagnosis', 'treatment', 'therapy', 'medicine', 'drug',
+        'surgery', 'physician', 'doctor', 'nurse', 'care', 'wellness',
+        'epidemiology', 'public health', 'mental health', 'cardiology',
+        'oncology', 'neurology', 'pediatrics', 'radiology', 'pathology',
+        'pharmacy', 'pharmaceutical', 'vaccine', 'symptom', 'disorder',
+        'syndrome', 'infection', 'chronic', 'acute', 'rehabilitation',
+        'telemedicine', 'ehr', 'emr', 'electronic health record'
+    ]
+    
+    # Software/Technology-related keywords
+    software_keywords = [
+        'software', 'application', 'app', 'system', 'platform', 'algorithm',
+        'artificial intelligence', 'ai', 'machine learning', 'ml', 'deep learning',
+        'neural network', 'data', 'database', 'analytics', 'informatics',
+        'computer', 'digital', 'technology', 'tech', 'automation', 'robot',
+        'robotics', 'iot', 'internet of things', 'cloud', 'mobile', 'web',
+        'api', 'interface', 'user interface', 'ui', 'ux', 'user experience',
+        'model', 'prediction', 'classification', 'segmentation', 'detection',
+        'monitoring', 'sensor', 'wearable', 'device', 'hardware', 'computing',
+        'algorithm', 'code', 'programming', 'framework', 'toolkit', 'library'
+    ]
+    
+    # Combine text to check
+    text_to_check = (title + ' ' + text).lower()
+    
+    # Check categories if provided
+    if categories:
+        categories_text = ' '.join(categories).lower()
+        text_to_check += ' ' + categories_text
+    
+    # Check for healthcare keywords
+    has_healthcare = any(keyword in text_to_check for keyword in healthcare_keywords)
+    
+    # Check for software keywords
+    has_software = any(keyword in text_to_check for keyword in software_keywords)
+    
+    # Return True only if BOTH healthcare AND software are present
+    return has_healthcare and has_software
+
 @app.route('/import/wikipedia', methods=['POST'])
 @login_required
 def import_wikipedia():
-    """Import a single Wikipedia article"""
+    """Import healthcare-software combination articles from Wikipedia"""
     search_query = request.form.get('search_query')
-    domain = request.form.get('domain', 'general')
+    domain = request.form.get('domain', 'healthcare_software')
     
     if not search_query:
         flash('Please enter a search query')
         return redirect(url_for('dashboard'))
     
     try:
-        # Search for the article
-        search_results = wikipedia.search(search_query, results=3)
+        # Search for more articles to increase chances of finding healthcare-software content
+        search_results = wikipedia.search(search_query, results=10)
         
         if not search_results:
             flash(f'No Wikipedia articles found for "{search_query}"')
             return redirect(url_for('dashboard'))
         
-        # Get the first result
-        article_title = search_results[0]
+        imported_articles = []
         
-        # Get the page content
-        page = wikipedia.page(article_title, auto_suggest=False)
-        content = page.content
+        # Loop through search results to find healthcare-software related articles
+        for article_title in search_results:
+            try:
+                # Get the page content
+                page = wikipedia.page(article_title, auto_suggest=False)
+                content = page.content
+                
+                # Check if article is healthcare-software related
+                if is_healthcare_software_related(content, article_title, page.categories):
+                    # Create a filename
+                    safe_title = re.sub(r'[^\w\s-]', '', article_title).strip().replace(' ', '_')
+                    filename = secure_filename(f"{current_user.id}_{datetime.now().timestamp()}_{safe_title}.txt")
+                    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                    
+                    # Save content to file
+                    with open(filepath, 'w', encoding='utf-8') as f:
+                        f.write(f"Title: {article_title}\n\n")
+                        f.write(f"URL: {page.url}\n\n")
+                        f.write(f"Categories: {', '.join(page.categories[:10])}\n\n")
+                        f.write("=== HEALTHCARE-SOFTWARE CONTENT ===\n\n")
+                        f.write(content)
+                    
+                    # Create dataset record
+                    dataset = Dataset(
+                        name=f"Wikipedia (Healthcare-Software): {article_title}",
+                        domain='healthcare_software',
+                        filename=filename,
+                        user_id=current_user.id,
+                        source_type='wikipedia',
+                        source_url=page.url
+                    )
+                    db.session.add(dataset)
+                    db.session.commit()
+                    
+                    # Process the dataset
+                    process_dataset(dataset.id, filepath)
+                    
+                    imported_articles.append(article_title)
+                    
+                    # Stop after finding 3 relevant articles
+                    if len(imported_articles) >= 3:
+                        break
+                
+                # Small delay to be respectful to Wikipedia
+                sleep(0.5)
+                
+            except Exception as e:
+                print(f"Error checking/importing {article_title}: {e}")
+                continue
         
-        # Create a filename
-        safe_title = re.sub(r'[^\w\s-]', '', article_title).strip().replace(' ', '_')
-        filename = secure_filename(f"{current_user.id}_{datetime.now().timestamp()}_{safe_title}.txt")
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        
-        # Save content to file
-        with open(filepath, 'w', encoding='utf-8') as f:
-            f.write(f"Title: {article_title}\n\n")
-            f.write(f"URL: {page.url}\n\n")
-            f.write(content)
-        
-        # Create dataset record
-        dataset = Dataset(
-            name=f"Wikipedia: {article_title}",
-            domain=domain,
-            filename=filename,
-            user_id=current_user.id,
-            source_type='wikipedia',
-            source_url=page.url
-        )
-        db.session.add(dataset)
-        db.session.commit()
-        
-        # Process the dataset
-        process_dataset(dataset.id, filepath)
-        
-        flash(f'Successfully imported Wikipedia article: {article_title}')
+        if imported_articles:
+            flash(f'Successfully imported {len(imported_articles)} healthcare-software combination articles: {", ".join(imported_articles)}')
+        else:
+            flash(f'No healthcare-software combination articles found for "{search_query}". Try adding terms like "software", "AI", or "digital health" to your search.')
         
     except wikipedia.exceptions.DisambiguationError as e:
         # Handle disambiguation pages
@@ -323,18 +423,18 @@ def import_wikipedia():
 @app.route('/import/wikipedia/advanced', methods=['POST'])
 @login_required
 def import_wikipedia_advanced():
-    """Advanced Wikipedia import with multiple articles"""
+    """Advanced Wikipedia import with healthcare-software filtering"""
     query = request.form.get('query')
-    domain = request.form.get('domain', 'general')
-    limit = int(request.form.get('limit', 3))
+    domain = request.form.get('domain', 'healthcare_software')
+    limit = int(request.form.get('limit', 5))
     
     if not query:
         flash('Please enter a search query')
         return redirect(url_for('dashboard'))
     
     try:
-        # Search for articles
-        search_results = wikipedia.search(query, results=limit)
+        # Search for more articles to ensure we find relevant ones
+        search_results = wikipedia.search(query, results=limit * 2)
         
         if not search_results:
             flash(f'No Wikipedia articles found for "{query}"')
@@ -348,33 +448,41 @@ def import_wikipedia_advanced():
                 page = wikipedia.page(article_title, auto_suggest=False)
                 content = page.content
                 
-                # Create a filename
-                safe_title = re.sub(r'[^\w\s-]', '', article_title).strip().replace(' ', '_')
-                filename = secure_filename(f"{current_user.id}_{datetime.now().timestamp()}_{safe_title}.txt")
-                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                
-                # Save content to file
-                with open(filepath, 'w', encoding='utf-8') as f:
-                    f.write(f"Title: {article_title}\n\n")
-                    f.write(f"URL: {page.url}\n\n")
-                    f.write(content)
-                
-                # Create dataset record
-                dataset = Dataset(
-                    name=f"Wikipedia: {article_title}",
-                    domain=domain,
-                    filename=filename,
-                    user_id=current_user.id,
-                    source_type='wikipedia',
-                    source_url=page.url
-                )
-                db.session.add(dataset)
-                db.session.commit()
-                
-                # Process the dataset
-                process_dataset(dataset.id, filepath)
-                
-                imported_count += 1
+                # Check if article is healthcare-software related
+                if is_healthcare_software_related(content, article_title, page.categories):
+                    # Create a filename
+                    safe_title = re.sub(r'[^\w\s-]', '', article_title).strip().replace(' ', '_')
+                    filename = secure_filename(f"{current_user.id}_{datetime.now().timestamp()}_{safe_title}.txt")
+                    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                    
+                    # Save content to file with enhanced metadata
+                    with open(filepath, 'w', encoding='utf-8') as f:
+                        f.write(f"Title: {article_title}\n\n")
+                        f.write(f"URL: {page.url}\n\n")
+                        f.write(f"Categories: {', '.join(page.categories[:10])}\n\n")
+                        f.write("=== HEALTHCARE-SOFTWARE CONTENT ===\n\n")
+                        f.write(content)
+                    
+                    # Create dataset record
+                    dataset = Dataset(
+                        name=f"Wikipedia (Healthcare-Software): {article_title}",
+                        domain='healthcare_software',
+                        filename=filename,
+                        user_id=current_user.id,
+                        source_type='wikipedia',
+                        source_url=page.url
+                    )
+                    db.session.add(dataset)
+                    db.session.commit()
+                    
+                    # Process the dataset
+                    process_dataset(dataset.id, filepath)
+                    
+                    imported_count += 1
+                    
+                    # Stop when we've reached the desired limit
+                    if imported_count >= limit:
+                        break
                 
                 # Small delay to be respectful to Wikipedia
                 sleep(0.5)
@@ -383,7 +491,10 @@ def import_wikipedia_advanced():
                 print(f"Error importing {article_title}: {e}")
                 continue
         
-        flash(f'Successfully imported {imported_count} Wikipedia articles')
+        if imported_count > 0:
+            flash(f'Successfully imported {imported_count} healthcare-software combination Wikipedia articles')
+        else:
+            flash(f'No healthcare-software combination articles found for "{query}". Try adding terms like "software", "AI", "digital health", or "informatics" to your search.')
         
     except Exception as e:
         flash(f'Error in advanced Wikipedia import: {str(e)}')
@@ -393,7 +504,7 @@ def import_wikipedia_advanced():
 @app.route('/import/arxiv', methods=['POST'])
 @login_required
 def import_arxiv():
-    """Import papers from arXiv"""
+    """Import healthcare-software combination papers from arXiv"""
     search_query = request.form.get('search_query')
     max_results = int(request.form.get('max_results', 10))
     
@@ -402,54 +513,77 @@ def import_arxiv():
         return redirect(url_for('dashboard'))
     
     try:
+        # Enhance search query to focus on healthcare-software topics
+        enhanced_query = f"({search_query}) AND (healthcare OR medical OR clinical OR health) AND (software OR AI OR algorithm OR machine learning OR digital)"
+        
         # Search arXiv
         search = arxiv.Search(
-            query=search_query,
-            max_results=max_results,
+            query=enhanced_query,
+            max_results=max_results * 2,  # Get more results to filter
             sort_by=arxiv.SortCriterion.Relevance
         )
         
         imported_count = 0
         
         for result in search.results():
-            # Create content from paper metadata and summary
-            content = f"Title: {result.title}\n\n"
-            content += f"Authors: {', '.join(author.name for author in result.authors)}\n\n"
-            content += f"Published: {result.published}\n\n"
-            content += f"Updated: {result.updated}\n\n"
-            content += f"Categories: {', '.join(result.categories)}\n\n"
-            content += f"DOI: {result.doi}\n\n" if result.doi else ""
-            content += f"Journal Reference: {result.journal_ref}\n\n" if result.journal_ref else ""
-            content += "Abstract:\n"
-            content += result.summary
+            # Check if paper is healthcare-software related
+            title_lower = result.title.lower()
+            abstract_lower = result.summary.lower()
+            categories_text = ' '.join(result.categories).lower()
             
-            # Create a filename
-            safe_title = re.sub(r'[^\w\s-]', '', result.title)[:100].strip().replace(' ', '_')
-            filename = secure_filename(f"{current_user.id}_{datetime.now().timestamp()}_arxiv_{safe_title}.txt")
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            # Define healthcare and software keywords for arXiv
+            healthcare_terms = ['healthcare', 'medical', 'clinical', 'health', 'patient', 'disease', 'diagnosis', 'treatment']
+            software_terms = ['software', 'algorithm', 'ai', 'machine learning', 'deep learning', 'neural', 'digital', 'informatics', 'computer']
             
-            # Save content to file
-            with open(filepath, 'w', encoding='utf-8') as f:
-                f.write(content)
+            has_healthcare = any(term in title_lower or term in abstract_lower or term in categories_text for term in healthcare_terms)
+            has_software = any(term in title_lower or term in abstract_lower or term in categories_text for term in software_terms)
             
-            # Create dataset record
-            dataset = Dataset(
-                name=f"arXiv: {result.title[:100]}",
-                domain='academic',
-                filename=filename,
-                user_id=current_user.id,
-                source_type='arxiv',
-                source_url=result.entry_id
-            )
-            db.session.add(dataset)
-            db.session.commit()
-            
-            # Process the dataset
-            process_dataset(dataset.id, filepath)
-            
-            imported_count += 1
+            if has_healthcare and has_software:
+                # Create content from paper metadata and summary
+                content = f"Title: {result.title}\n\n"
+                content += f"Authors: {', '.join(author.name for author in result.authors)}\n\n"
+                content += f"Published: {result.published}\n\n"
+                content += f"Updated: {result.updated}\n\n"
+                content += f"Categories: {', '.join(result.categories)}\n\n"
+                content += f"DOI: {result.doi}\n\n" if result.doi else ""
+                content += f"Journal Reference: {result.journal_ref}\n\n" if result.journal_ref else ""
+                content += "=== HEALTHCARE-SOFTWARE PAPER ===\n\n"
+                content += "Abstract:\n"
+                content += result.summary
+                
+                # Create a filename
+                safe_title = re.sub(r'[^\w\s-]', '', result.title)[:100].strip().replace(' ', '_')
+                filename = secure_filename(f"{current_user.id}_{datetime.now().timestamp()}_healthcare_software_{safe_title}.txt")
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                
+                # Save content to file
+                with open(filepath, 'w', encoding='utf-8') as f:
+                    f.write(content)
+                
+                # Create dataset record
+                dataset = Dataset(
+                    name=f"arXiv (Healthcare-Software): {result.title[:100]}",
+                    domain='healthcare_software',
+                    filename=filename,
+                    user_id=current_user.id,
+                    source_type='arxiv',
+                    source_url=result.entry_id
+                )
+                db.session.add(dataset)
+                db.session.commit()
+                
+                # Process the dataset
+                process_dataset(dataset.id, filepath)
+                
+                imported_count += 1
+                
+                if imported_count >= max_results:
+                    break
         
-        flash(f'Successfully imported {imported_count} arXiv papers')
+        if imported_count > 0:
+            flash(f'Successfully imported {imported_count} healthcare-software combination arXiv papers')
+        else:
+            flash(f'No healthcare-software combination papers found for "{search_query}". Try adding "medical AI", "health informatics", or "clinical software" to your search.')
         
     except Exception as e:
         flash(f'Error importing arXiv papers: {str(e)}')
@@ -459,10 +593,10 @@ def import_arxiv():
 @app.route('/import/arxiv/advanced', methods=['POST'])
 @login_required
 def import_arxiv_advanced():
-    """Advanced arXiv import with more options"""
+    """Advanced arXiv import with healthcare-software focus"""
     query = request.form.get('query')
     category = request.form.get('category', 'all')
-    max_results = int(request.form.get('max_results', 10))
+    max_results = int(request.form.get('max_results', 5))
     sort_by = request.form.get('sort_by', 'relevance')
     
     if not query:
@@ -470,11 +604,28 @@ def import_arxiv_advanced():
         return redirect(url_for('dashboard'))
     
     try:
-        # Build search query with category if specified
+        # Focus on healthcare-software related arXiv categories
+        healthcare_software_categories = [
+            'cs.LG',     # Machine Learning
+            'cs.AI',     # Artificial Intelligence
+            'cs.CY',     # Computers and Society (includes health informatics)
+            'cs.HC',     # Human-Computer Interaction
+            'q-bio.QM',  # Quantitative Methods (bioinformatics, medical)
+            'eess.IV',   # Image and Video Processing (medical imaging)
+            'stat.AP',   # Applications (biostatistics)
+            'physics.med-ph'  # Medical Physics
+        ]
+        
+        # Build search query with healthcare-software focus
         if category and category != 'all':
             search_query = f"cat:{category} AND ({query})"
         else:
-            search_query = query
+            # If no specific category, search across healthcare-software categories
+            category_query = ' OR '.join([f'cat:{cat}' for cat in healthcare_software_categories])
+            search_query = f"({category_query}) AND ({query})"
+        
+        # Enhance with healthcare-software keywords
+        search_query = f"({search_query}) AND (healthcare OR medical OR clinical OR health) AND (software OR AI OR algorithm OR machine learning)"
         
         # Map sort option
         sort_map = {
@@ -503,12 +654,13 @@ def import_arxiv_advanced():
             content += f"DOI: {result.doi}\n\n" if result.doi else ""
             content += f"Journal Reference: {result.journal_ref}\n\n" if result.journal_ref else ""
             content += f"Comment: {result.comment}\n\n" if result.comment else ""
+            content += "=== HEALTHCARE-SOFTWARE RESEARCH ===\n\n"
             content += "Abstract:\n"
             content += result.summary
             
             # Create filename
             safe_title = re.sub(r'[^\w\s-]', '', result.title)[:100].strip().replace(' ', '_')
-            filename = secure_filename(f"{current_user.id}_{datetime.now().timestamp()}_arxiv_{safe_title}.txt")
+            filename = secure_filename(f"{current_user.id}_{datetime.now().timestamp()}_healthcare_software_{safe_title}.txt")
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             
             # Save content
@@ -517,8 +669,8 @@ def import_arxiv_advanced():
             
             # Create dataset record
             dataset = Dataset(
-                name=f"arXiv: {result.title[:100]}",
-                domain='academic',
+                name=f"arXiv (Healthcare-Software): {result.title[:100]}",
+                domain='healthcare_software',
                 filename=filename,
                 user_id=current_user.id,
                 source_type='arxiv',
@@ -532,13 +684,15 @@ def import_arxiv_advanced():
             
             imported_count += 1
         
-        flash(f'Successfully imported {imported_count} arXiv papers')
+        if imported_count > 0:
+            flash(f'Successfully imported {imported_count} healthcare-software combination arXiv papers')
+        else:
+            flash(f'No healthcare-software combination papers found. Try different keywords or check your search query.')
         
     except Exception as e:
         flash(f'Error in advanced arXiv import: {str(e)}')
     
     return redirect(url_for('dashboard'))
-
 # ============================================
 # 6. MULTI-FILE UPLOAD ROUTE
 # ============================================
@@ -1076,7 +1230,140 @@ def reverse_relation(relation):
     }
     return reversals.get(relation, 'related_to')
 
+
 # ============================================
+@app.route('/dataset/<int:dataset_id>/view')
+@login_required
+def view_original_file(dataset_id):
+    """View the original uploaded file in the browser"""
+    dataset = Dataset.query.get_or_404(dataset_id)
+    
+    # Make sure the user owns this dataset
+    if dataset.user_id != current_user.id and not current_user.is_admin:
+        abort(403)
+    
+    # Construct the full file path
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], dataset.filename)
+    
+    # Check if file exists
+    if not os.path.exists(file_path):
+        abort(404, description="Original file not found")
+    
+    # For text files, display them in the browser
+    mime_type, _ = mimetypes.guess_type(file_path)
+    if mime_type and mime_type.startswith('text/'):
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            return render_template('view_file.html', 
+                                 dataset=dataset, 
+                                 content=content,
+                                 filename=dataset.filename)
+        except UnicodeDecodeError:
+            # Try different encoding
+            with open(file_path, 'r', encoding='latin-1') as f:
+                content = f.read()
+            return render_template('view_file.html', 
+                                 dataset=dataset, 
+                                 content=content,
+                                 filename=dataset.filename)
+    else:
+        # For other file types, just serve the file
+        return send_file(file_path, as_attachment=False)
+
+@app.route('/dataset/<int:dataset_id>/download')
+@login_required
+def download_original_file(dataset_id):
+    """Download the original uploaded file"""
+    dataset = Dataset.query.get_or_404(dataset_id)
+    
+    # Make sure the user owns this dataset
+    if dataset.user_id != current_user.id and not current_user.is_admin:
+        abort(403)
+    
+    # Construct the full file path
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], dataset.filename)
+    
+    # Check if file exists
+    if not os.path.exists(file_path):
+        abort(404, description="Original file not found")
+    
+    return send_file(
+        file_path,
+        as_attachment=True,
+        download_name=dataset.name,  # Use the original display name
+        mimetype=mimetypes.guess_type(file_path)[0] or 'application/octet-stream'
+    )
+
+@app.route('/dataset/<int:dataset_id>/file-info')
+@login_required
+def file_info(dataset_id):
+    """Get information about the uploaded file"""
+    dataset = Dataset.query.get_or_404(dataset_id)
+    
+    if dataset.user_id != current_user.id and not current_user.is_admin:
+        abort(403)
+    
+    # Construct the full file path
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], dataset.filename)
+    
+    if not os.path.exists(file_path):
+        return jsonify({'error': 'File not found'}), 404
+    
+    file_stats = os.stat(file_path)
+    file_size_bytes = file_stats.st_size
+    
+    # Format file size
+    if file_size_bytes < 1024:
+        file_size = f"{file_size_bytes} B"
+    elif file_size_bytes < 1024 * 1024:
+        file_size = f"{file_size_bytes / 1024:.1f} KB"
+    elif file_size_bytes < 1024 * 1024 * 1024:
+        file_size = f"{file_size_bytes / (1024 * 1024):.1f} MB"
+    else:
+        file_size = f"{file_size_bytes / (1024 * 1024 * 1024):.1f} GB"
+    
+    return jsonify({
+        'filename': dataset.name,  # Display name
+        'stored_filename': dataset.filename,  # Actual stored filename
+        'size': file_size,
+        'uploaded': dataset.uploaded_at.strftime('%Y-%m-%d %H:%M:%S'),
+        'type': mimetypes.guess_type(file_path)[0] or 'Unknown',
+        'source_type': dataset.source_type,
+        'domain': dataset.domain
+    })
+
+# Also add a route to list all files in a dataset (useful for debugging)
+@app.route('/dataset/<int:dataset_id>/files')
+@login_required
+def list_dataset_files(dataset_id):
+    """List all files associated with a dataset (for debugging)"""
+    dataset = Dataset.query.get_or_404(dataset_id)
+    
+    if dataset.user_id != current_user.id and not current_user.is_admin:
+        abort(403)
+    
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], dataset.filename)
+    
+    file_info = {
+        'dataset_id': dataset.id,
+        'dataset_name': dataset.name,
+        'stored_filename': dataset.filename,
+        'file_exists': os.path.exists(file_path),
+        'upload_folder': app.config['UPLOAD_FOLDER'],
+        'full_path': file_path,
+        'source_type': dataset.source_type,
+        'source_url': dataset.source_url
+    }
+    
+    if os.path.exists(file_path):
+        file_info['file_size'] = os.path.getsize(file_path)
+        file_info['modified'] = datetime.fromtimestamp(os.path.getmtime(file_path)).strftime('%Y-%m-%d %H:%M:%S')
+    
+    return jsonify(file_info)
+
+
+
 # 9. RUN THE APPLICATION
 # ============================================
 if __name__ == '__main__':

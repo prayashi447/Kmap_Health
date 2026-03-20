@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="file-viewer-container">
+    <div class="file-header">
+        <div>
+            <h2>{{ filename }}</h2>
+            <p class="text-muted">
+                Dataset: {{ dataset.name }} | Domain: {{ dataset.domain }}
+                {% if dataset.source_type != 'upload' %}
+                | Source: {{ dataset.source_type|capitalize }}
+                {% if dataset.source_url %}
+                | <a href="{{ dataset.source_url }}" target="_blank">Original Source</a>
+                {% endif %}
+                {% endif %}
+            </p>
+        </div>
+        <div class="file-actions">
+            <a href="{{ url_for('download_original_file', dataset_id=dataset.id) }}" class="btn-primary">
+                <i class="bi bi-download"></i> Download
+            </a>
+            <a href="{{ url_for('dashboard') }}" class="btn-outline">
+                <i class="bi bi-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+    
+    <div class="file-content-wrapper">
+        <div class="file-info-bar">
+            <span><i class="bi bi-file-earmark"></i> {{ filename }}</span>
+            <span><i class="bi bi-clock"></i> Uploaded: {{ dataset.uploaded_at.strftime('%Y-%m-%d %H:%M') }}</span>
+            <span><i class="bi bi-hdd"></i> <span id="file-size">Loading...</span></span>
+        </div>
+        
+        <div class="file-content">
+            {% if filename.endswith('.csv') %}
+            <div class="csv-table-wrapper">
+                {% set rows = content.split('\n') %}
+                {% if rows %}
+                    {% set headers = rows[0].split(',') %}
+                    <table class="csv-table">
+                        <thead>
+                            <tr>
+                                {% for header in headers %}
+                                <th>{{ header.strip('"')|trim }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in rows[1:] if row.strip() %}
+                            <tr>
+                                {% for cell in row.split(',') %}
+                                <td>{{ cell.strip('"')|trim }}</td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% endif %}
+            </div>
+            {% elif filename.endswith('.json') %}
+            <pre class="json-pretty">{{ content }}</pre>
+            {% else %}
+            <pre class="text-content">{{ content }}</pre>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.file-viewer-container {
+    padding: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.file-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    background: var(--glass-bg);
+    padding: 1.5rem;
+    border-radius: 16px;
+    border: 1px solid var(--glass-border);
+}
+
+.file-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.file-info-bar {
+    display: flex;
+    gap: 2rem;
+    padding: 1rem;
+    background: var(--glass-bg-light);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.file-content-wrapper {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.file-content {
+    padding: 1.5rem;
+    max-height: 70vh;
+    overflow-y: auto;
+    background: #0a0f1a;
+}
+
+.csv-table-wrapper {
+    overflow-x: auto;
+}
+
+.csv-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.csv-table th {
+    background: var(--glass-bg-light);
+    padding: 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-primary);
+    border-bottom: 2px solid var(--accent-blue);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.csv-table td {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid rgba(128, 180, 255, 0.1);
+    color: var(--text-secondary);
+}
+
+.csv-table tr:hover td {
+    background: rgba(26, 110, 245, 0.1);
+}
+
+.json-pretty, .text-content {
+    margin: 0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-family: 'Monaco', 'Menlo', monospace;
+    font-size: 0.9rem;
+    color: #80b4ff;
+    line-height: 1.5;
+}
+
+.btn-outline {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    color: var(--text-primary);
+    text-decoration: none;
+    transition: all 0.2s;
+    background: transparent;
+}
+
+.btn-outline:hover {
+    background: var(--glass-bg-light);
+    border-color: var(--accent-blue);
+    text-decoration: none;
+    color: var(--text-primary);
+}
+
+.text-muted {
+    color: var(--text-secondary);
+    opacity: 0.8;
+}
+
+.text-muted a {
+    color: var(--accent-blue);
+    text-decoration: none;
+}
+
+.text-muted a:hover {
+    text-decoration: underline;
+}
+</style>
+
+<script>
+// Fetch file size info
+fetch(`/dataset/{{ dataset.id }}/file-info`)
+    .then(r => r.json())
+    .then(data => {
+        document.getElementById('file-size').textContent = data.size;
+    })
+    .catch(err => {
+        document.getElementById('file-size').textContent = 'Unknown';
+    });
+</script>
+{% endblock %}
