@@ -1,0 +1,20 @@
+Title: Identifying Critical Tokens for Accurate Predictions in Transformer-based Medical Imaging Models
+
+Authors: Solha Kang, Joris Vankerschaver, Utku Ozbulak
+
+Published: 2025-01-26 08:49:13+00:00
+
+Updated: 2025-01-26 08:49:13+00:00
+
+Categories: cs.CV, cs.AI
+
+Primary Category: cs.CV
+
+DOI: 10.1007/978-3-031-73290-4_17
+
+Comment: Accepted for publication in MICCAI 2024 Workshop on Machine Learning in Medical Imaging (MLMI)
+
+=== HEALTHCARE-SOFTWARE PAPER ===
+
+Abstract:
+With the advancements in self-supervised learning (SSL), transformer-based computer vision models have recently demonstrated superior results compared to convolutional neural networks (CNNs) and are poised to dominate the field of artificial intelligence (AI)-based medical imaging in the upcoming years. Nevertheless, similar to CNNs, unveiling the decision-making process of transformer-based models remains a challenge. In this work, we take a step towards demystifying the decision-making process of transformer-based medical imaging models and propose Token Insight, a novel method that identifies the critical tokens that contribute to the prediction made by the model. Our method relies on the principled approach of token discarding native to transformer-based models, requires no additional module, and can be applied to any transformer model. Using the proposed approach, we quantify the importance of each token based on its contribution to the prediction and enable a more nuanced understanding of the model's decisions. Our experimental results which are showcased on the problem of colonic polyp identification using both supervised and self-supervised pretrained vision transformers indicate that Token Insight contributes to a more transparent and interpretable transformer-based medical imaging model, fostering trust and facilitating broader adoption in clinical settings.

@@ -1,0 +1,18 @@
+Title: Deep learning for photoacoustic imaging: a survey
+
+Authors: Changchun Yang, Hengrong Lan, Feng Gao, Fei Gao
+
+Published: 2020-08-10 15:53:30+00:00
+
+Updated: 2020-12-02 02:02:26+00:00
+
+Categories: cs.CV, eess.IV
+
+Primary Category: cs.CV
+
+Comment: A review of deep learning for photoacoustic imaging
+
+=== HEALTHCARE-SOFTWARE PAPER ===
+
+Abstract:
+Machine learning has been developed dramatically and witnessed a lot of applications in various fields over the past few years. This boom originated in 2009, when a new model emerged, that is, the deep artificial neural network, which began to surpass other established mature models on some important benchmarks. Later, it was widely used in academia and industry. Ranging from image analysis to natural language processing, it fully exerted its magic and now become the state-of-the-art machine learning models. Deep neural networks have great potential in medical imaging technology, medical data analysis, medical diagnosis and other healthcare issues, and is promoted in both pre-clinical and even clinical stages. In this review, we performed an overview of some new developments and challenges in the application of machine learning to medical image analysis, with a special focus on deep learning in photoacoustic imaging. The aim of this review is threefold: (i) introducing deep learning with some important basics, (ii) reviewing recent works that apply deep learning in the entire ecological chain of photoacoustic imaging, from image reconstruction to disease diagnosis, (iii) providing some open source materials and other resources for researchers interested in applying deep learning to photoacoustic imaging.

@@ -35,6 +35,7 @@
     pointer-events: none;
     z-index: 0;
   }
+  
   .upload-wrapper {
     position: relative;
     z-index: 1;
@@ -310,6 +311,139 @@
   .btn-upload:hover::before { opacity: 1; }
   .btn-upload:active { transform: translateY(0); }
 
+  /* ── External Sources Styles ── */
+  .external-sources-section {
+    margin-top: 1rem;
+  }
+
+  .external-card {
+    background: rgba(2, 11, 26, 0.5);
+    border-radius: 16px;
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+    border: 1px solid rgba(77, 147, 255, 0.2);
+    transition: all 0.2s ease;
+  }
+
+  .external-card:hover {
+    border-color: rgba(77, 147, 255, 0.4);
+    background: rgba(2, 11, 26, 0.6);
+  }
+
+  .external-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .external-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: rgba(26, 110, 245, 0.15);
+    border: 1px solid rgba(77, 147, 255, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    color: #4d93ff;
+  }
+
+  .external-header h5 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0;
+    color: #e8f2ff;
+  }
+
+  .external-header p {
+    font-size: 0.8rem;
+    color: rgba(179, 210, 255, 0.6);
+    margin: 0;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-top: 0.75rem;
+  }
+
+  .input-row input,
+  .input-row select {
+    flex: 1;
+    min-width: 120px;
+    background: rgba(2, 11, 26, 0.7);
+    border: 1px solid rgba(77, 147, 255, 0.22);
+    border-radius: 12px;
+    color: #e8f2ff;
+    padding: 0.65rem 1rem;
+    font-size: 0.85rem;
+    font-family: 'DM Sans', sans-serif;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .input-row input:focus,
+  .input-row select:focus {
+    border-color: #4d93ff;
+  }
+
+  .btn-import {
+    background: linear-gradient(135deg, #0a4fb5, #1a6ef5);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    padding: 0.65rem 1.25rem;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+  }
+
+  .btn-import.teal {
+    background: linear-gradient(135deg, #0a9f8c, #0af5e0);
+  }
+
+  .btn-import:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.05);
+  }
+
+  .divider {
+    text-align: center;
+    margin: 1rem 0;
+    position: relative;
+  }
+
+  .divider::before,
+  .divider::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: calc(50% - 60px);
+    height: 1px;
+    background: rgba(77, 147, 255, 0.2);
+  }
+
+  .divider::before { left: 0; }
+  .divider::after { right: 0; }
+
+  .divider span {
+    background: rgba(10, 34, 64, 0.6);
+    padding: 0 1rem;
+    font-size: 0.75rem;
+    color: #80b4ff;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
   /* ── Animation ── */
   @keyframes fadeSlideUp {
     from { opacity: 0; transform: translateY(22px); }
@@ -335,6 +469,60 @@
 
     <!-- Body -->
     <div class="upload-body">
+      <!-- Local File Upload -->
+      <!-- External Sources Section -->
+      <div class="external-sources-section">
+        
+        <!-- Wikipedia Import -->
+        <div class="external-card">
+          <div class="external-header">
+            <div class="external-icon"><i class="bi bi-wikipedia"></i></div>
+            <div>
+              <h5>Import from Wikipedia</h5>
+              <p>Search and import articles to extract entities and relationships</p>
+            </div>
+          </div>
+          <form action="{{ url_for('import_wikipedia') }}" method="POST">
+            <div class="input-row">
+              <input type="text" name="search_query" placeholder="Article title…" required>
+              <select name="domain">
+                <option value="general">General</option>
+                <option value="science">Science</option>
+                <option value="history">History</option>
+                <option value="technology">Technology</option>
+              </select>
+              <button class="btn-import" type="submit"><i class="bi bi-search"></i> Import</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- arXiv Import -->
+        <div class="external-card">
+          <div class="external-header">
+            <div class="external-icon"><i class="bi bi-journal-text"></i></div>
+            <div>
+              <h5>Import from arXiv</h5>
+              <p>Import academic papers for research-focused knowledge graphs</p>
+            </div>
+          </div>
+          <form action="{{ url_for('import_arxiv') }}" method="POST">
+            <div class="input-row">
+              <input type="text" name="search_query" placeholder="Search papers…" required>
+              <select name="max_results">
+                <option value="5">5 papers</option>
+                <option value="10" selected>10 papers</option>
+                <option value="20">20 papers</option>
+              </select>
+              <button class="btn-import teal" type="submit"><i class="bi bi-search"></i> Search</button>
+            </div>
+          </form>
+        </div>
+
+      </div>
+
+      <div class="divider">
+        <span>OR</span>
+      </div>
       <form method="POST" action="{{ url_for('upload') }}" enctype="multipart/form-data">
 
         <!-- Domain Select -->
@@ -366,25 +554,26 @@
           </div>
         </div>
 
-        <!-- How it works -->
-        <div class="info-box">
-          <div class="info-box-title">
-            <i class="bi bi-info-circle"></i> How it works
-          </div>
-          <ol class="info-steps">
-            <li><span class="step-num">1</span> Upload your text, CSV , Json file</li>
-            <li><span class="step-num">2</span> Our NLP pipeline extracts entities and relations</li>
-            <li><span class="step-num">3</span> Knowledge graph is automatically built</li>
-            <li><span class="step-num">4</span> Explore and search your graph</li>
-          </ol>
-        </div>
-
         <!-- Submit -->
         <button type="submit" class="btn-upload">
           <i class="bi bi-cloud-upload"></i> Upload &amp; Process
         </button>
 
       </form>
+
+      <!-- How it works -->
+      <div class="info-box">
+        <div class="info-box-title">
+          <i class="bi bi-info-circle"></i> How it works
+        </div>
+        <ol class="info-steps">
+          <li><span class="step-num">1</span> Upload your text, CSV, JSON file or import from external sources</li>
+          <li><span class="step-num">2</span> Our NLP pipeline extracts entities and relations</li>
+          <li><span class="step-num">3</span> Knowledge graph is automatically built</li>
+          <li><span class="step-num">4</span> Explore and search your graph</li>
+        </ol>
+      </div>
+
     </div>
 
   </div>

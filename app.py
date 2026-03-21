@@ -135,7 +135,9 @@ def load_user(user_id):
 
 @app.route('/')
 def index():
-    return redirect(url_for('login'))
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    return render_template('landing.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -178,7 +180,7 @@ def register():
 @login_required
 def logout():
     logout_user()
-    return redirect(url_for('login'))
+    return redirect(url_for('index'))
 
 @app.route('/dashboard')
 @login_required

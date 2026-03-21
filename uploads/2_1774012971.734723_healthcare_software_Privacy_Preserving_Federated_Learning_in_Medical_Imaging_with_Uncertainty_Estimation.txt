@@ -1,0 +1,18 @@
+Title: Privacy Preserving Federated Learning in Medical Imaging with Uncertainty Estimation
+
+Authors: Nikolas Koutsoubis, Yasin Yilmaz, Ravi P. Ramachandran, Matthew Schabath, Ghulam Rasool
+
+Published: 2024-06-18 17:35:52+00:00
+
+Updated: 2024-06-18 17:35:52+00:00
+
+Categories: cs.LG, cs.AI, cs.DC, eess.IV, stat.ML
+
+Primary Category: cs.LG
+
+Comment: 31 pages, 5 figures, 3 tables, Journal preprint
+
+=== HEALTHCARE-SOFTWARE PAPER ===
+
+Abstract:
+Machine learning (ML) and Artificial Intelligence (AI) have fueled remarkable advancements, particularly in healthcare. Within medical imaging, ML models hold the promise of improving disease diagnoses, treatment planning, and post-treatment monitoring. Various computer vision tasks like image classification, object detection, and image segmentation are poised to become routine in clinical analysis. However, privacy concerns surrounding patient data hinder the assembly of large training datasets needed for developing and training accurate, robust, and generalizable models. Federated Learning (FL) emerges as a compelling solution, enabling organizations to collaborate on ML model training by sharing model training information (gradients) rather than data (e.g., medical images). FL's distributed learning framework facilitates inter-institutional collaboration while preserving patient privacy. However, FL, while robust in privacy preservation, faces several challenges. Sensitive information can still be gleaned from shared gradients that are passed on between organizations during model training. Additionally, in medical imaging, quantifying model confidence\uncertainty accurately is crucial due to the noise and artifacts present in the data. Uncertainty estimation in FL encounters unique hurdles due to data heterogeneity across organizations. This paper offers a comprehensive review of FL, privacy preservation, and uncertainty estimation, with a focus on medical imaging. Alongside a survey of current research, we identify gaps in the field and suggest future directions for FL research to enhance privacy and address noisy medical imaging data challenges.

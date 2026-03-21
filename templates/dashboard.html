@@ -589,53 +589,7 @@
     </div>
     <br></br>
 
-    <!-- External Sources -->
-    <div class="glass-card">
-      <div class="card-head"><h5>Import from External Sources</h5></div>
-      <div class="card-body-inner">
-        <div class="import-grid">
-
-          <div class="import-card wiki">
-            <div class="import-icon-wrap"><i class="bi bi-wikipedia"></i></div>
-            <h5>Wikipedia</h5>
-            <p>Search and import articles to extract entities and relationships.</p>
-            <form action="{{ url_for('import_wikipedia') }}" method="POST">
-              <div class="input-row">
-                <input type="text" name="search_query" placeholder="Article title…" required>
-                <select name="domain">
-                  <option value="general">General</option>
-                  <option value="science">Science</option>
-                  <option value="history">History</option>
-                  <option value="technology">Technology</option>
-                </select>
-                <button class="btn-import" type="submit"><i class="bi bi-search"></i> Import</button>
-              </div>
-            </form>
-          </div>
-
-          <div class="import-card arxiv">
-            <div class="import-icon-wrap"><i class="bi bi-journal-text"></i></div>
-            <h5>arXiv</h5>
-            <p>Import academic papers for research-focused knowledge graphs.</p>
-            <form action="{{ url_for('import_arxiv') }}" method="POST">
-              <div class="input-row">
-                <input type="text" name="search_query" placeholder="Search papers…" required>
-                <select name="max_results">
-                  <option value="5">5</option>
-                  <option value="10" selected>10</option>
-                  <option value="20">20</option>
-                </select>
-                <button class="btn-import teal" type="submit"><i class="bi bi-search"></i> Search</button>
-              </div>
-            </form>
-          </div>
-
-        </div>
-      </div>
-    </div>
-
-  </div>
-
+    
   <!-- ── Chart + Activity ── -->
   <div class="section-label"><i class="bi bi-activity"></i> Analytics</div>
   <div class="chart-row">
