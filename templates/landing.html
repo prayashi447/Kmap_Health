@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kmap Health — Knowledge Graph Platform</title>
+<title>HealthNet — Cross Domain Knowledge Mapping Tool</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -106,6 +106,46 @@
   .logo-icon svg { width: 18px; height: 18px; }
   .logo-text { font-size: 16px; font-weight: 600; letter-spacing: -.3px; }
   .logo-text span { color: var(--purple-400); }
+
+
+  /* ─── LOGO BRAND STACK ─── */
+  .logo-brand { display: flex; flex-direction: column; gap: 1px; }
+  .logo-tagline {
+    font-size: 9px; font-weight: 500; letter-spacing: .8px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.4);
+    white-space: nowrap;
+  }
+
+  /* ─── TOPBAR QUICK-ACCESS BUTTONS ─── */
+  .topbar-actions { margin-left: auto; display: flex; gap: 8px; }
+  .topbar-btn {
+    padding: 7px 18px; border-radius: 8px;
+    font-size: 13px; font-weight: 600;
+    text-decoration: none; cursor: pointer;
+    transition: background .18s, transform .15s;
+    white-space: nowrap;
+  }
+  .topbar-btn:active { transform: scale(.97); }
+  .topbar-btn-ghost {
+    color: rgba(255,255,255,.75);
+    background: rgba(255,255,255,.07);
+    border: 1px solid rgba(255,255,255,.18);
+  }
+  .topbar-btn-ghost:hover { background: rgba(255,255,255,.13); color: #fff; }
+  .topbar-btn-solid {
+    color: #fff;
+    background: var(--purple-600);
+    border: 1px solid transparent;
+    box-shadow: 0 2px 12px rgba(83,74,183,.4);
+  }
+  .topbar-btn-solid:hover { filter: brightness(1.12); }
+
+  @media (max-width: 600px) {
+    .logo-tagline { display: none; }
+    .topbar-btn-ghost { display: none; }
+    .topbar-actions { gap: 6px; }
+  }
 
   /* ─── SLIDE CONTENT BASE ─── */
   .slide-inner {
@@ -387,7 +427,14 @@
       <line x1="12" y1="7" x2="5" y2="15"/><line x1="12" y1="7" x2="19" y2="15"/><line x1="5" y1="17" x2="19" y2="17"/>
     </svg>
   </div>
-  <span class="logo-text">Kmap <span>Health</span></span>
+  <div class="logo-brand">
+    <span class="logo-text">Health<span>Net</span></span>
+    <span class="logo-tagline">Cross Domain Knowledge Mapping Tool</span>
+  </div>
+  <div class="topbar-actions">
+    <a href="/login" class="topbar-btn topbar-btn-ghost">Sign in</a>
+    <a href="/register" class="topbar-btn topbar-btn-solid">Get started</a>
+  </div>
 </div>
 
 <!-- Nav dots -->
@@ -420,7 +467,7 @@
           <span class="hl-purple">living knowledge graph</span>
         </h1>
         <p class="slide-body">
-          Kmap Health extracts entities, maps relationships, and builds
+          HealthNet extracts entities, maps relationships, and builds
           an interconnected graph from any document — medical records,
           research papers, datasets, or Wikipedia articles.
         </p>
@@ -625,7 +672,7 @@
           <span class="hl-coral">AI, and academia</span>
         </h1>
         <p class="slide-body">
-          Upload datasets from different domains and watch Kmap Health
+          Upload datasets from different domains and watch HealthNet
           automatically discover bridges — "Protein" in a medical paper is
           the same concept as in an AI research abstract.
         </p>
