@@ -1,22 +1,6 @@
 📘 Kmap Health
 
-🧠 KnowMap
-
-Interlinking Healthcare & Research Domains using AI
-
----
-
-🚀 Overview
-
-KnowMap is an intelligent AI-powered platform that bridges the gap between Healthcare and Research domains.
-It leverages Natural Language Processing (NLP), Knowledge Graphs, and Semantic Analysis to extract insights from unstructured data and visualize hidden relationships.
-
----
-
-🎯 Problem Statement
-
-- Healthcare and research data exist in isolation
-# 🧠 KnowMap / Health-Net  
+🧠 # 🧠 KnowMap / Health-Net  
 ## Cross-Domain Knowledge Mapping Tool using NLP, Knowledge Graphs & Semantic Analysis
 
 ---
