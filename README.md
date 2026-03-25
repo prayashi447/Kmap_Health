@@ -131,12 +131,6 @@ Frontend| HTML, CSS, JavaScript, Bootstrap
 
 ---
 
-👨‍💻 Contributors
-
-- Vinayak Bhise
-
----
-
 ⭐ Acknowledgement
 
 This project was developed as part of an academic and research initiative to explore the integration of AI in healthcare and research domains.
